@@ -27,6 +27,7 @@ const api = {
     const q = new URLSearchParams(params).toString();
     return apiFetch(`/bills${q ? `?${q}` : ""}`);
   },
+  //timetabletable259@gmail.com 
   getNextBillNumber: () => apiFetch("/bills/next-number"),
   createBill: (data) => apiFetch("/bills", { method: "POST", body: JSON.stringify(data) }),
   getBill: (id) => apiFetch(`/bills/${id}`),
