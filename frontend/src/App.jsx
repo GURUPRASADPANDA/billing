@@ -582,9 +582,77 @@ function BillPreview({ bill, onClose, onPrint, company }) {
                 </div>
               </div>
             </div>
-            <div style={{ textAlign: "center", fontSize: 12, color: "#999", borderTop: "1px solid #e2e8f0", paddingTop: 16 }}>
-              Thank you for your business! — {company?.companyName} — {company?.phone}
-            </div>
+            
+
+
+
+
+
+            <div style={{ borderTop: "1px solid #000", paddingTop: 10, fontSize: 12 }}>
+
+  {/* Top Section */}
+  <div style={{ display: "flex", justifyContent: "space-between" }}>
+    
+    {/* Bank Box (Left) */}
+    <div
+      style={{
+        border: "2px solid #000",
+        padding: 10,
+        width: "40%",
+        textAlign: "center",
+        fontWeight: "500",
+        boxShadow: "3px 3px 0px #000",
+      }}
+    >
+      <div>UCO BANK</div>
+      <div>NUAPADA BRANCH</div>
+      <div>A/C - 13190210002636</div>
+      <div>IFSC - UCBA0001319</div>
+    </div>
+
+    {/* Right empty space (like bill layout) */}
+    <div style={{ width: "55%" }}></div>
+  </div>
+
+  {/* Bottom Section */}
+  <div
+    style={{
+      display: "flex",
+      justifyContent: "space-between",
+      marginTop: 15,
+    }}
+  >
+    
+    {/* Terms & Conditions (Left) */}
+    <div style={{ width: "60%" }}>
+      <strong>Terms & Conditions:</strong>
+      <p style={{ margin: "5px 0" }}>
+        1) Goods once sold will not be taken back or exchanged.
+        <br />
+        2) Subject to Cuttack jurisdiction.
+      </p>
+    </div>
+
+    {/* Signature Section (Right) */}
+    <div style={{ width: "35%", textAlign: "center" }}>
+      <div style={{ fontWeight: "bold" }}>
+        For MAHAVIR ENTERPRISES
+      </div>
+
+      <div style={{ marginTop: 40 }}>
+        Auth. Signatory
+      </div>
+    </div>
+  </div>
+</div>
+
+            
+
+
+
+
+
+            
           </div>
         </div>
       </div>
