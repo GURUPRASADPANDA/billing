@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, createContext, useContext } from "react";
 
-const API_BASE = "http://localhost:5000/api";
+const API_BASE = `${process.env.REACT_APP_API_URL}/api`;
 
 async function apiFetch(path, options = {}) {
   const res = await fetch(API_BASE + path, {
