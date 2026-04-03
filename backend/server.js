@@ -1,52 +1,59 @@
+require('dotenv').config();
+
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-require('dotenv').config();
 
 const app = express();
 
+// ✅ Middleware
 app.use(cors());
 app.use(express.json());
 
-const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://billing:billing@cluster0.oanpcii.mongodb.net/?appName=Cluster0';
+// ✅ MongoDB Connection
+const connectDB = async () => {
+  try {
+    await mongoose.connect(process.env.MONGO_URI);
+    console.log('✅ MongoDB Connected');
+  } catch (err) {
+    console.error('❌ MongoDB Error:', err.message);
+    process.exit(1); // stop app if DB fails
+  }
+};
 
-// mongoose.connect(MONGO_URI)
-//   .then(() => console.log('MongoDB connected successfully'))
-//   .catch(err => console.error('MongoDB connection error:', err));
+// Call DB connection once
+connectDB();
 
-// Replace this:
-// With this:
-let isConnected = false;
-async function connectDB() {
-  if (isConnected) return;
-  await mongoose.connect(process.env.MONGO_URI || 'mongodb+srv://billing:billing@cluster0.oanpcii.mongodb.net/?appName=Cluster0');
-  isConnected = true;
-}
-app.use(async (req, res, next) => {
-  try { await connectDB(); next(); }
-  catch { res.status(500).json({ error: 'DB connection failed' }); }
-});
-
-
-
-
+// ✅ Routes
 app.use('/api/parties', require('./routes/parties'));
 app.use('/api/items', require('./routes/items'));
 app.use('/api/bills', require('./routes/bills'));
 app.use('/api/profile', require('./routes/profile'));
 
+// ✅ Health Route (for uptime ping)
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Billing API is running' });
+  res.status(200).json({
+    status: 'ok',
+    message: 'Billing API is running 🚀'
+  });
 });
 
+// ✅ Root Route (optional)
+app.get('/', (req, res) => {
+  res.send('Backend is live 🚀');
+});
+
+// ✅ Global Error Handler
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ error: err.message || 'Something went wrong!' });
+  console.error('🔥 Error:', err.stack);
+  res.status(500).json({
+    error: err.message || 'Something went wrong!'
+  });
 });
 
+// ✅ IMPORTANT: Render PORT
+const PORT = process.env.PORT || 5000;
 
-// With this:
-if (process.env.NODE_ENV !== 'production') {
-  app.listen(5000, () => console.log('🚀 Local server on port 5000'));
-}
-module.exports = app;
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});
