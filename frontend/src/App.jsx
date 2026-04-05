@@ -624,17 +624,34 @@ function BillPreview({ bill, onClose, onPrint, company }) {
 };
   const shareBill = async () => {
   try {
-    if (navigator.share) {
-      // ✅ Mobile sharing
+    const element = printRef.current;
+
+    const opt = {
+      margin: 0.5,
+      filename: `Bill-${bill.billNumber}.pdf`,
+      image: { type: "jpeg", quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: "in", format: "a4", orientation: "portrait" },
+    };
+
+    // Generate PDF as blob
+    const pdfBlob = await html2pdf().set(opt).from(element).outputPdf("blob");
+
+    const file = new File([pdfBlob], `Bill-${bill.billNumber}.pdf`, {
+      type: "application/pdf",
+    });
+
+    // ✅ Mobile share (file)
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
       await navigator.share({
+        files: [file],
         title: `Bill #${bill.billNumber}`,
         text: "Here is your bill",
-        url: window.location.href,
       });
     } else {
-      // 💻 Desktop fallback
-      await navigator.clipboard.writeText(window.location.href);
-      alert("Link copied! You can now paste & share.");
+      // 💻 fallback
+      alert("Sharing file not supported on this device. Downloading instead.");
+      handleDownload(); // fallback
     }
   } catch (err) {
     console.log(err);
