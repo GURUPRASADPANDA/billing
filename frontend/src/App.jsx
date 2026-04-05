@@ -1372,7 +1372,26 @@ export default function App() {
       {isMobile && (
         <header style={{ background: "var(--sidebar)", padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--border)", position: "sticky", top: 0, zIndex: 10 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 32, height: 32, borderRadius: 8, background: "#2563eb", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700 }}>₹</div>
+            
+            <div style={{
+              width: 40,
+              height: 40,
+              borderRadius: 10,
+              background: "#111", // ✅ black
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center"
+            }}>
+              <img
+                src="/favicon.png"
+                alt="logo"
+                style={{
+                  width: 22,
+                  height: 22,
+                  objectFit: "contain"
+                }}
+              />
+            </div>
             <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text)" }}>{company.companyName}</div>
           </div>
           <div style={{ display: "flex", gap: 12, alignItems: "center" }}>

@@ -1,10 +1,9 @@
-const CACHE_NAME = 'billing-app-v1';
+const CACHE_NAME = 'billing-app-v2';
 const urlsToCache = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/logo192.png',
-  '/logo512.png'
+  '/favicon.png'
 ];
 
 self.addEventListener('install', event => {
