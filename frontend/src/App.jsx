@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, useRef, createContext, useContext } from "react";
+import { Receipt, History, Users, Box, User, Pencil, Trash2, Phone, MapPin, Eye, Printer, Sun, Moon, Check, Share2, Download, X} from "lucide-react";
+import html2pdf from "html2pdf.js";
 
 const API_BASE = `${process.env.REACT_APP_API_URL}/api`;
 
@@ -102,7 +104,7 @@ function Modal({ title, children, onClose, width = 480 }) {
       }}>
         <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <h3 style={{ margin: 0, fontSize: 18, fontWeight: 600, color: "var(--text)" }}>{title}</h3>
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, color: "var(--text-muted)", lineHeight: 1 }}>×</button>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, color: "var(--text-muted)", lineHeight: 1 }}><X size={14} /></button>
         </div>
         <div style={{ padding: 24 }}>{children}</div>
       </div>
@@ -163,43 +165,136 @@ function Btn({ children, variant = "primary", loading, ...props }) {
 
 function Sidebar({ page, setPage, dark, setDark, company }) {
   const navItems = [
-    { id: "billing", label: "Create Bill", icon: "📋" },
-    { id: "history", label: "Bill History", icon: "📚" },
-    { id: "parties", label: "Parties", icon: "🏢" },
-    { id: "items", label: "Items", icon: "📦" },
-    { id: "profile", label: "Profile", icon: "⚙️" },
+    { id: "billing", label: "Create Bill", icon: Receipt },
+    { id: "history", label: "Bill History", icon: History },
+    { id: "parties", label: "Parties", icon: Users },
+    { id: "items", label: "Items", icon: Box },
+    { id: "profile", label: "Profile", icon: User },
   ];
+
   return (
-    <aside style={{
-      width: 220, minHeight: "100vh", background: "var(--sidebar)", borderRight: "1px solid var(--border)",
-      display: "flex", flexDirection: "column", flexShrink: 0,
-    }}>
-      <div style={{ padding: "24px 20px 16px", borderBottom: "1px solid var(--border)" }}>
-        <div style={{ width: 36, height: 36, borderRadius: 8, background: "#2563eb", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 10 }}>
+    <aside
+      style={{
+        width: 220,
+        minHeight: "100vh",
+        background: "var(--sidebar)",
+        borderRight: "1px solid var(--border)",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      {/* Header */}
+      <div
+        style={{
+          padding: "24px 20px 16px",
+          borderBottom: "1px solid var(--border)",
+        }}
+      >
+        <div
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: 8,
+            background: "#2563eb",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            marginBottom: 10,
+          }}
+        >
           <span style={{ color: "#fff", fontSize: 18 }}>₹</span>
         </div>
-        <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)", lineHeight: 1.3 }}>{company?.companyName || "Mohavhir"}</div>
-        <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>Enterprises</div>
+
+        <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>
+          {company?.companyName || "Mohavhir"}
+        </div>
+        <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
+          Enterprises
+        </div>
       </div>
-      <nav style={{ flex: 1, padding: "12px 12px" }}>
-        {navItems.map(item => (
-          <button key={item.id} onClick={() => setPage(item.id)} style={{
-            width: "100%", padding: "10px 12px", borderRadius: 8, border: "none", cursor: "pointer",
-            display: "flex", alignItems: "center", gap: 10, marginBottom: 4, textAlign: "left",
-            background: page === item.id ? "#2563eb" : "transparent",
-            color: page === item.id ? "#fff" : "var(--text-muted)",
-            fontSize: 14, fontWeight: page === item.id ? 500 : 400,
-            transition: "background 0.15s",
-          }}>
-            <span style={{ fontSize: 16 }}>{item.icon}</span>{item.label}
-          </button>
-        ))}
+
+      {/* Navigation */}
+      <nav style={{ flex: 1, padding: "12px 8px" }}>
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          const active = page === item.id;
+
+          return (
+            <button
+              key={item.id}
+              onClick={() => setPage(item.id)}
+              style={{
+                width: "100%",
+                padding: "10px 14px",
+                borderRadius: 10,
+                border: "none",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                marginBottom: 6,
+                textAlign: "left",
+                position: "relative",
+
+                // 🎯 Active style
+                background: active ? "rgba(37, 99, 235, 0.1)" : "transparent",
+                color: active ? "#2563eb" : "var(--text-muted)",
+                fontWeight: active ? 600 : 400,
+
+                transition: "all 0.2s ease",
+              }}
+              onMouseEnter={(e) => {
+                if (!active) e.currentTarget.style.background = "rgba(0,0,0,0.05)";
+              }}
+              onMouseLeave={(e) => {
+                if (!active) e.currentTarget.style.background = "transparent";
+              }}
+            >
+              {/* 🔵 Left active indicator */}
+              {active && (
+                <div
+                  style={{
+                    position: "absolute",
+                    left: 0,
+                    top: "20%",
+                    bottom: "20%",
+                    width: 4,
+                    borderRadius: 4,
+                    background: "#2563eb",
+                  }}
+                />
+              )}
+
+              {/* Icon */}
+              <Icon size={18} />
+
+              {/* Label */}
+              <span>{item.label}</span>
+            </button>
+          );
+        })}
       </nav>
+
+      {/* Dark Mode Toggle */}
       <div style={{ padding: "12px 16px", borderTop: "1px solid var(--border)" }}>
-        <button onClick={() => setDark(!dark)} style={{
-          width: "100%", padding: "8px 12px", borderRadius: 8, border: "1px solid var(--border)",
-          background: "var(--bg)", color: "var(--text-muted)", cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", gap: 8,
-        }}>
+        <button
+          onClick={() => setDark(!dark)}
+          style={{
+            width: "100%",
+            padding: "10px 12px",
+            borderRadius: 10,
+            border: "1px solid var(--border)",
+            background: "var(--bg)",
+            color: "var(--text-muted)",
+            cursor: "pointer",
+            fontSize: 13,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
+            transition: "all 0.2s ease",
+          }}
+        >
           {dark ? "☀️ Light Mode" : "🌙 Dark Mode"}
         </button>
       </div>
@@ -209,31 +304,76 @@ function Sidebar({ page, setPage, dark, setDark, company }) {
 
 function BottomNav({ page, setPage }) {
   const navItems = [
-    { id: "billing", label: "Bill", icon: "📋" },
-    { id: "history", label: "History", icon: "📚" },
-    { id: "parties", label: "Parties", icon: "🏢" },
-    { id: "items", label: "Items", icon: "📦" },
-    { id: "profile", label: "Profile", icon: "⚙️" },
+    { id: "billing", label: "Bill", icon: Receipt },
+    { id: "history", label: "History", icon: History },
+    { id: "parties", label: "Parties", icon: Users },
+    { id: "items", label: "Items", icon: Box },
+    { id: "profile", label: "Profile", icon: User },
   ];
 
   return (
-    <nav style={{
-      position: "fixed", bottom: 0, left: 0, right: 0, background: "var(--sidebar)", borderTop: "1px solid var(--border)",
-      display: "flex", justifyContent: "space-around", padding: "8px 12px 16px", zIndex: 100, boxShadow: "0 -4px 20px rgba(0,0,0,0.1)"
-    }}>
-      {navItems.map(item => (
-        <button key={item.id} onClick={() => setPage(item.id)} style={{
-          background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer",
-          color: page === item.id ? "#2563eb" : "var(--text-muted)", transition: "color 0.15s, transform 0.1s", padding: 8,
-          transform: page === item.id ? "scale(1.1)" : "scale(1)",
-        }}>
-          <span style={{ fontSize: 20 }}>{item.icon}</span>
-          <span style={{ fontSize: 10, fontWeight: page === item.id ? 700 : 500 }}>{item.label}</span>
-        </button>
-      ))}
+    <nav
+      style={{
+        position: "fixed",
+        bottom: 0,
+        left: 0,
+        right: 0,
+        background: "var(--sidebar)",
+        borderTop: "1px solid var(--border)",
+        display: "flex",
+        justifyContent: "space-around",
+        padding: "10px 8px 14px",
+        zIndex: 100,
+        boxShadow: "0 -4px 20px rgba(0,0,0,0.1)",
+      }}
+    >
+      {navItems.map((item) => {
+        const Icon = item.icon;
+        const active = page === item.id;
+
+        return (
+          <button
+            key={item.id}
+            onClick={() => setPage(item.id)}
+            style={{
+              background: active ? "rgba(37, 99, 235, 0.1)" : "transparent",
+              border: "none",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 4,
+              cursor: "pointer",
+              padding: "6px 10px",
+              borderRadius: 10,
+
+              color: active ? "#2563eb" : "var(--text-muted)",
+              transform: active ? "scale(1.08)" : "scale(1)",
+
+              transition: "all 0.2s ease",
+            }}
+          >
+            {/* Icon */}
+            <Icon size={20} strokeWidth={2} />
+
+            {/* Label */}
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: active ? 700 : 500,
+              }}
+            >
+              {item.label}
+            </span>
+          </button>
+        );
+      })}
     </nav>
   );
 }
+
+
+
+
 
 function ProfilePage({ toast, company, setCompany }) {
   const [form, setForm] = useState(company);
@@ -252,7 +392,12 @@ function ProfilePage({ toast, company, setCompany }) {
 
   return (
     <div style={{ maxWidth: 600, margin: "0 auto" }}>
-      <h2 style={{ margin: "0 0 24px", fontSize: 22, fontWeight: 600, color: "var(--text)" }}>⚙️ Company Profile</h2>
+      <h2 style={{ margin: "0 0 24px", fontSize: 22, fontWeight: 600, color: "var(--text)" }}><
+        div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <User size={20} />
+        <h2>Company Profile</h2>
+      </div></h2>
+
       <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 12, padding: 24 }}>
         <Input label="Company Name *" value={form.companyName} onChange={e => setForm({ ...form, companyName: e.target.value })} />
         <Input label="GST Number" value={form.gstNumber} onChange={e => setForm({ ...form, gstNumber: e.target.value })} />
@@ -305,56 +450,61 @@ function PartiesPage({ toast }) {
     catch (e) { toast(e.message, "error"); }
   };
 
-  return (
-    <div>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
-        <h2 style={{ margin: 0, fontSize: 22, fontWeight: 600, color: "var(--text)" }}>🏢 Parties</h2>
-        <Btn onClick={openAdd}>+ Add Party</Btn>
-      </div>
-      <div style={{ marginBottom: 16 }}>
-        <Input placeholder="Search parties..." value={search} onChange={e => setSearch(e.target.value)} style={{ maxWidth: 300 }} />
-      </div>
-      {loading ? <div style={{ textAlign: "center", color: "var(--text-muted)", padding: 40 }}>Loading...</div> :
-        parties.length === 0 ? <div style={{ textAlign: "center", color: "var(--text-muted)", padding: 60 }}>No parties found. Add one!</div> :
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
-          {parties.map(p => (
-            <div key={p._id} style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 12, padding: 20 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
-                <div style={{ width: 40, height: 40, borderRadius: 10, background: "#dbeafe", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 700, color: "#1d4ed8" }}>
-                  {p.companyName.charAt(0).toUpperCase()}
-                </div>
-                <div style={{ display: "flex", gap: 6 }}>
-                  <Btn variant="ghost" onClick={() => openEdit(p)} style={{ padding: "6px 10px" }}>✏️</Btn>
-                  <Btn variant="ghost" onClick={() => del(p._id)} style={{ padding: "6px 10px" }}>🗑️</Btn>
-                </div>
-              </div>
-              <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text)", marginBottom: 4 }}>{p.companyName}</div>
-              {p.gstNumber && <div style={{ fontSize: 12, color: "var(--text-muted)" }}>GST: {p.gstNumber}</div>}
-              {p.phone && <div style={{ fontSize: 12, color: "var(--text-muted)" }}>📞 {p.phone}</div>}
-              {p.address && <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>📍 {p.address}</div>}
-            </div>
-          ))}
+    return (
+      <div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
+          <h2 style={{ margin: 0, fontSize: 22, fontWeight: 600, color: "var(--text)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Users size={20} />
+              <h2>Parties</h2>
+            </div></h2>
+
+          <Btn onClick={openAdd}>+ Add Party</Btn>
         </div>
-      }
-      {modal && (
-        <Modal title={modal === "add" ? "Add Party" : "Edit Party"} onClose={() => setModal(null)}>
-          <Input label="Company Name *" value={form.companyName} onChange={e => setForm(f => ({ ...f, companyName: e.target.value }))} placeholder="Enter company name" />
-          <Input label="GST Number" value={form.gstNumber} onChange={e => setForm(f => ({ ...f, gstNumber: e.target.value }))} placeholder="e.g. 27AAGFM1234C1Z5" />
-          <Input label="Phone Number" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="+91 98765 43210" />
-          <div style={{ marginBottom: 16 }}>
-            <label style={{ display: "block", fontSize: 13, fontWeight: 500, color: "var(--text-muted)", marginBottom: 6 }}>Address</label>
-            <textarea value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
-              placeholder="Enter full address" rows={3}
-              style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg)", color: "var(--text)", fontSize: 14, outline: "none", boxSizing: "border-box", resize: "vertical" }} />
+        <div style={{ marginBottom: 16 }}>
+          <Input placeholder="Search parties..." value={search} onChange={e => setSearch(e.target.value)} style={{ maxWidth: 300 }} />
+        </div>
+        {loading ? <div style={{ textAlign: "center", color: "var(--text-muted)", padding: 40 }}>Loading...</div> :
+          parties.length === 0 ? <div style={{ textAlign: "center", color: "var(--text-muted)", padding: 60 }}>No parties found. Add one!</div> :
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
+            {parties.map(p => (
+              <div key={p._id} style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 12, padding: 20 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 10, background: "#dbeafe", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 700, color: "#1d4ed8" }}>
+                    {p.companyName.charAt(0).toUpperCase()}
+                  </div>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <Btn variant="ghost" onClick={() => openEdit(p)} style={{ padding: "6px 10px" }}><Pencil size={14} /></Btn>
+                    <Btn variant="ghost" onClick={() => del(p._id)} style={{ padding: "6px 10px" }}><Trash2 size={14} /></Btn>
+                  </div>
+                </div>
+                <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text)", marginBottom: 4 }}>{p.companyName}</div>
+                {p.gstNumber && <div style={{ fontSize: 12, color: "var(--text-muted)" }}>GST: {p.gstNumber}</div>}
+                {p.phone && <div style={{ fontSize: 12, color: "var(--text-muted)" }}><Phone size={14} /> {p.phone}</div>}
+                {p.address && <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}><MapPin size={14} /> {p.address}</div>}
+              </div>
+            ))}
           </div>
-          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-            <Btn variant="secondary" onClick={() => setModal(null)}>Cancel</Btn>
-            <Btn loading={saving} onClick={save}>Save Party</Btn>
-          </div>
-        </Modal>
-      )}
-    </div>
-  );
+        }
+        {modal && (
+          <Modal title={modal === "add" ? "Add Party" : "Edit Party"} onClose={() => setModal(null)}>
+            <Input label="Company Name *" value={form.companyName} onChange={e => setForm(f => ({ ...f, companyName: e.target.value }))} placeholder="Enter company name" />
+            <Input label="GST Number" value={form.gstNumber} onChange={e => setForm(f => ({ ...f, gstNumber: e.target.value }))} placeholder="e.g. 27AAGFM1234C1Z5" />
+            <Input label="Phone Number" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="+91 98765 43210" />
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: "block", fontSize: 13, fontWeight: 500, color: "var(--text-muted)", marginBottom: 6 }}>Address</label>
+              <textarea value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
+                placeholder="Enter full address" rows={3}
+                style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg)", color: "var(--text)", fontSize: 14, outline: "none", boxSizing: "border-box", resize: "vertical" }} />
+            </div>
+            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+              <Btn variant="secondary" onClick={() => setModal(null)}>Cancel</Btn>
+              <Btn loading={saving} onClick={save}>Save Party</Btn>
+            </div>
+          </Modal>
+        )}
+      </div>
+    );
 }
 
 function ItemsPage({ toast }) {
@@ -423,8 +573,8 @@ function ItemsPage({ toast }) {
                   <td style={{ padding: "13px 16px", color: "var(--text)", textAlign: "right" }}>{item.defaultPrice ? formatCurrency(item.defaultPrice) : "—"}</td>
                   <td style={{ padding: "13px 16px", color: "var(--text-muted)", textAlign: "center", fontSize: 13 }}>{item.unit}</td>
                   <td style={{ padding: "13px 16px", textAlign: "right" }}>
-                    <Btn variant="ghost" onClick={() => openEdit(item)} style={{ padding: "6px 10px", marginRight: 4 }}>✏️</Btn>
-                    <Btn variant="ghost" onClick={() => del(item._id)} style={{ padding: "6px 10px" }}>🗑️</Btn>
+                    <Btn variant="ghost" onClick={() => openEdit(item)} style={{ padding: "6px 10px", marginRight: 4 }}><Pencil size={14} /></Btn>
+                    <Btn variant="ghost" onClick={() => del(item._id)} style={{ padding: "6px 10px" }}><Trash2 size={14} /></Btn>
                   </td>
                 </tr>
               ))}
@@ -457,7 +607,39 @@ function ItemsPage({ toast }) {
 }
 
 function BillPreview({ bill, onClose, onPrint, company }) {
+  const [openMenu, setOpenMenu] = useState(false);
   const printRef = useRef();
+  const handleDownload = () => {
+  const element = printRef.current;
+
+  const opt = {
+    margin: 0.5,
+    filename: `Bill-${bill.billNumber}.pdf`,
+    image: { type: "jpeg", quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: "in", format: "a4", orientation: "portrait" },
+  };
+
+  html2pdf().set(opt).from(element).save();
+};
+  const shareBill = async () => {
+  try {
+    if (navigator.share) {
+      // ✅ Mobile sharing
+      await navigator.share({
+        title: `Bill #${bill.billNumber}`,
+        text: "Here is your bill",
+        url: window.location.href,
+      });
+    } else {
+      // 💻 Desktop fallback
+      await navigator.clipboard.writeText(window.location.href);
+      alert("Link copied! You can now paste & share.");
+    }
+  } catch (err) {
+    console.log(err);
+  }
+};
   const handlePrint = () => {
     const content = printRef.current.innerHTML;
     const win = window.open("", "_blank");
@@ -503,10 +685,78 @@ function BillPreview({ bill, onClose, onPrint, company }) {
       <div style={{ background: "var(--bg)", borderRadius: 16, width: "100%", maxWidth: 860, boxShadow: "0 24px 80px rgba(0,0,0,0.3)" }}>
         <div style={{ padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--border)" }}>
           <h3 style={{ margin: 0, fontSize: 17, fontWeight: 600, color: "var(--text)" }}>Bill Preview — #{bill.billNumber}</h3>
-          <div style={{ display: "flex", gap: 10 }}>
-            <Btn variant="success" onClick={handlePrint}>🖨️ Print / Download PDF</Btn>
-            <Btn variant="secondary" onClick={onClose}>Close</Btn>
-          </div>
+         
+          
+          <div style={{ display: "flex", gap: 10, position: "relative" }}>
+  
+  {/* Actions Button */}
+  <div style={{ position: "relative" }}>
+    <Btn
+      variant="success"
+      onClick={() => setOpenMenu(!openMenu)}
+      style={{ display: "flex", alignItems: "center", gap: 6 }}
+    >
+      <Printer size={14} />
+      Actions
+    </Btn>
+
+    {openMenu && (
+      <div
+        style={{
+          position: "absolute",
+          right: 0,
+          top: "110%",
+          background: "#fff",
+          border: "1px solid #e2e8f0",
+          borderRadius: 8,
+          boxShadow: "0 10px 25px rgba(0,0,0,0.15)",
+          minWidth: 180,
+          zIndex: 1000,
+        }}
+      >
+        {/* Print */}
+        <div
+          onClick={() => {
+            handlePrint();
+            setOpenMenu(false);
+          }}
+          style={{ padding: "10px 14px", cursor: "pointer" }}
+        >
+          <Printer size={14} /> Print
+        </div>
+
+        {/* Download */}
+        <div
+          onClick={() => {
+            handleDownload();
+            setOpenMenu(false);
+          }}
+          style={{ padding: "10px 14px", cursor: "pointer" }}
+        >
+          <Download size={14} /> Download PDF
+        </div>
+
+        {/* Share */}
+        <div
+          onClick={() => {
+            shareBill();
+            setOpenMenu(false);
+          }}
+          style={{ padding: "10px 14px", cursor: "pointer" }}
+        >
+          <Share2 size={14} /> Share
+        </div>
+      </div>
+    )}
+  </div>
+
+  {/* Close Button */}
+  <Btn variant="secondary" onClick={onClose}>Close</Btn>
+</div>
+
+
+
+        
         </div>
         <div style={{ padding: 24, background: "#f1f5f9", minHeight: 400 }}>
           <div ref={printRef} style={{ background: "#fff", borderRadius: 8, padding: 40, maxWidth: 794, margin: "0 auto", boxShadow: "0 2px 20px rgba(0,0,0,0.08)" }}>
@@ -514,8 +764,8 @@ function BillPreview({ bill, onClose, onPrint, company }) {
               <div>
                 <div className="company-name" style={{ fontSize: 24, fontWeight: 700, color: "#1d3170" }}>{company?.companyName}</div>
                 <div className="company-detail" style={{ fontSize: 12, color: "#555", marginTop: 4 }}>GST: {company?.gstNumber}</div>
-                <div className="company-detail" style={{ fontSize: 12, color: "#555" }}>📍 {company?.address}</div>
-                <div className="company-detail" style={{ fontSize: 12, color: "#555" }}>📞 {company?.phone}</div>
+                <div className="company-detail" style={{ fontSize: 12, color: "#555" }}><MapPin size={14} /> {company?.address}</div>
+                <div className="company-detail" style={{ fontSize: 12, color: "#555" }}><Phone size={14} /> {company?.phone}</div>
               </div>
               <div style={{ textAlign: "right" }}>
                 <div className="bill-title" style={{ fontSize: 26, fontWeight: 700, color: "#2563eb" }}>TAX INVOICE</div>
@@ -728,7 +978,7 @@ function BillingPage({ toast, company, isMobile }) {
 
   return (
     <div>
-      <h2 style={{ margin: "0 0 24px", fontSize: 22, fontWeight: 600, color: "var(--text)" }}>📋 Create New Bill</h2>
+      <h2 style={{ margin: "0 0 24px", fontSize: 22, fontWeight: 600, color: "var(--text)" }}> Create New Bill</h2>
       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 16, marginBottom: 24 }}>
         <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 12, padding: 16 }}>
           <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>BILL NUMBER</div>
@@ -822,7 +1072,7 @@ function BillingPage({ toast, company, isMobile }) {
             <span>Grand Total</span><span>₹{grandTotal.toFixed(2)}</span>
           </div>
           <Btn onClick={generate} loading={saving} style={{ width: "100%", marginTop: 16, justifyContent: "center", padding: "13px" }}>
-            ✅ Generate Bill
+             Generate Bill
           </Btn>
         </div>
       </div>
@@ -859,7 +1109,7 @@ function HistoryPage({ toast, company, isMobile }) {
 
   return (
     <div>
-      <h2 style={{ margin: "0 0 24px", fontSize: 22, fontWeight: 600, color: "var(--text)" }}>📚 Bill History</h2>
+      <h2 style={{ margin: "0 0 24px", fontSize: 22, fontWeight: 600, color: "var(--text)" }}><History size={14} /> Bill History</h2>
       <div style={{ display: "flex", gap: 12, marginBottom: 20, flexWrap: "wrap", alignItems: "flex-end" }}>
         <div>
           <label style={{ display: "block", fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>From Date</label>
@@ -892,8 +1142,8 @@ function HistoryPage({ toast, company, isMobile }) {
                   <td style={{ padding: "13px 16px", textAlign: "right", fontWeight: 700, color: "var(--text)", fontSize: 15 }}>{formatCurrency(bill.grandTotal)}</td>
                   <td style={{ padding: "13px 16px" }}>
                     <div style={{ display: "flex", gap: 6 }}>
-                      <Btn variant="secondary" onClick={() => setPreview(bill)} style={{ padding: "6px 12px", fontSize: 12 }}>👁 View</Btn>
-                      <Btn variant="ghost" onClick={() => del(bill._id)} style={{ padding: "6px 10px" }}>🗑️</Btn>
+                      <Btn variant="secondary" onClick={() => setPreview(bill)} style={{ padding: "6px 12px", fontSize: 12 }}><Eye size={14} /> View</Btn>
+                      <Btn variant="ghost" onClick={() => del(bill._id)} style={{ padding: "6px 10px" }}><Trash2 size={14} /></Btn>
                     </div>
                   </td>
                 </tr>
@@ -940,7 +1190,7 @@ export default function App() {
             <div style={{ width: 32, height: 32, borderRadius: 8, background: "#2563eb", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700 }}>₹</div>
             <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text)" }}>{company.companyName}</div>
           </div>
-          <button onClick={() => setDark(!dark)} style={{ background: "none", border: "none", fontSize: 20 }}>{dark ? "☀️" : "🌙"}</button>
+          <button onClick={() => setDark(!dark)} style={{ background: "none", border: "none", fontSize: 20 }}>{dark ? <Sun size={14} /> : <Moon size={14} />}</button>
         </header>
       )}
 
