@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useRef, createContext, useContext } f
 import { Receipt, History, Users, Box, User, Pencil, Trash2, Phone, MapPin, Eye, Printer, Sun, Moon, Check, Share2, Download, X} from "lucide-react";
 import html2pdf from "html2pdf.js";
 
+
+
 const API_BASE = `${process.env.REACT_APP_API_URL}/api`;
 
 async function apiFetch(path, options = {}) {
@@ -413,7 +415,7 @@ function ProfilePage({ toast, company, setCompany }) {
   );
 }
 
-function PartiesPage({ toast }) {
+function PartiesPage({ toast, isMobile }) {
   const [parties, setParties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -453,11 +455,12 @@ function PartiesPage({ toast }) {
     return (
       <div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
-          <h2 style={{ margin: 0, fontSize: 22, fontWeight: 600, color: "var(--text)" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <Users size={20} />
-              <h2>Parties</h2>
-            </div></h2>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+            <Users size={20} />
+            <h2 style={{ margin: 0, fontSize: 22, fontWeight: 600, color: "var(--text)" }}>
+              Parties
+            </h2>
+          </div>
 
           <Btn onClick={openAdd}>+ Add Party</Btn>
         </div>
@@ -466,7 +469,7 @@ function PartiesPage({ toast }) {
         </div>
         {loading ? <div style={{ textAlign: "center", color: "var(--text-muted)", padding: 40 }}>Loading...</div> :
           parties.length === 0 ? <div style={{ textAlign: "center", color: "var(--text-muted)", padding: 60 }}>No parties found. Add one!</div> :
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr": "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
             {parties.map(p => (
               <div key={p._id} style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 12, padding: 20 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
@@ -514,6 +517,13 @@ function ItemsPage({ toast }) {
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({ name: "", defaultPrice: "", unit: "pcs" });
   const [saving, setSaving] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 600);
+
+    useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 600);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -548,7 +558,12 @@ function ItemsPage({ toast }) {
   return (
     <div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
-        <h2 style={{ margin: 0, fontSize: 22, fontWeight: 600, color: "var(--text)" }}>📦 Items</h2>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <Box size={20} />
+          <h2 style={{ margin: 0, fontSize: 22, fontWeight: 600, color: "var(--text)" }}>
+            Items
+          </h2>
+        </div>
         <Btn onClick={openAdd}>+ Add Item</Btn>
       </div>
       <div style={{ marginBottom: 16 }}>
@@ -557,29 +572,79 @@ function ItemsPage({ toast }) {
       {loading ? <div style={{ textAlign: "center", color: "var(--text-muted)", padding: 40 }}>Loading...</div> :
         items.length === 0 ? <div style={{ textAlign: "center", color: "var(--text-muted)", padding: 60 }}>No items found. Add one!</div> :
         <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 12, overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 600 }}>
-            <thead>
-              <tr style={{ background: "var(--sidebar)" }}>
-                <th style={{ padding: "12px 16px", textAlign: "left", fontSize: 12, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Item Name</th>
-                <th style={{ padding: "12px 16px", textAlign: "right", fontSize: 12, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Default Price</th>
-                <th style={{ padding: "12px 16px", textAlign: "center", fontSize: 12, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Unit</th>
-                <th style={{ padding: "12px 16px", textAlign: "right", fontSize: 12, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((item, i) => (
-                <tr key={item._id} style={{ borderTop: i > 0 ? "1px solid var(--border)" : "none" }}>
-                  <td style={{ padding: "13px 16px", color: "var(--text)", fontWeight: 500 }}>{item.name}</td>
-                  <td style={{ padding: "13px 16px", color: "var(--text)", textAlign: "right" }}>{item.defaultPrice ? formatCurrency(item.defaultPrice) : "—"}</td>
-                  <td style={{ padding: "13px 16px", color: "var(--text-muted)", textAlign: "center", fontSize: 13 }}>{item.unit}</td>
-                  <td style={{ padding: "13px 16px", textAlign: "right" }}>
-                    <Btn variant="ghost" onClick={() => openEdit(item)} style={{ padding: "6px 10px", marginRight: 4 }}><Pencil size={14} /></Btn>
-                    <Btn variant="ghost" onClick={() => del(item._id)} style={{ padding: "6px 10px" }}><Trash2 size={14} /></Btn>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+
+  {/* ✅ Desktop Header */}
+  {!isMobile && (
+    <thead>
+      <tr style={{ background: "var(--sidebar)" }}>
+        <th style={{ padding: "12px 16px", textAlign: "left" }}>Item Name</th>
+        <th style={{ padding: "12px 16px", textAlign: "center" }}>Unit</th>
+        <th style={{ padding: "12px 16px", textAlign: "right" }}>Price</th>
+        <th style={{ padding: "12px 16px", textAlign: "right" }}>Actions</th>
+      </tr>
+    </thead>
+  )}
+
+  <tbody>
+    {items.map(item => (
+
+      isMobile ? (
+
+        // 📱 MOBILE CARD
+        <tr key={item._id}>
+          <td colSpan="4" style={{ padding: 12, borderBottom: "1px solid var(--border)" }}>
+            
+            <div style={{ fontWeight: 600, fontSize: 15 }}>
+              {item.name}
+            </div>
+
+            <div style={{
+              display: "flex",
+              justifyContent: "space-between",
+              marginTop: 6,
+              fontSize: 13,
+              color: "var(--text-muted)"
+            }}>
+              <span>Unit: {item.unit}</span>
+              <span>Price: ₹{item.price}</span>
+            </div>
+
+            <div style={{ marginTop: 10, display: "flex", gap: 10 }}>
+              <Btn variant="ghost" onClick={() => openEdit(item)}>
+                <Pencil size={14} />
+              </Btn>
+              <Btn variant="ghost" onClick={() => del(item._id)}>
+                <Trash2 size={14} />
+              </Btn>
+            </div>
+
+          </td>
+        </tr>
+
+      ) : (
+
+        // 💻 DESKTOP
+        <tr key={item._id}>
+          <td style={{ padding: "12px 16px" }}>{item.name}</td>
+          <td style={{ textAlign: "center" }}>{item.unit}</td>
+          <td style={{ textAlign: "right" }}>₹{item.price}</td>
+          <td style={{ textAlign: "right" }}>
+            <Btn variant="ghost" onClick={() => openEdit(item)}>
+              <Pencil size={14} />
+            </Btn>
+            <Btn variant="ghost" onClick={() => del(item._id)}>
+              <Trash2 size={14} />
+            </Btn>
+          </td>
+        </tr>
+
+      )
+
+    ))}
+  </tbody>
+
+</table>
         </div>
       }
       {modal && (
@@ -1018,43 +1083,78 @@ function BillingPage({ toast, company, isMobile }) {
           <Btn variant="secondary" onClick={addRow} style={{ padding: "7px 14px", fontSize: 13 }}>+ Add Item</Btn>
         </div>
         <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 600 }}>
-            <thead>
-              <tr style={{ background: "var(--sidebar)" }}>
-                <th style={{ padding: "10px 16px", textAlign: "left", fontSize: 12, color: "var(--text-muted)", fontWeight: 600 }}>Item Name</th>
-                <th style={{ padding: "10px 12px", textAlign: "center", fontSize: 12, color: "var(--text-muted)", fontWeight: 600, width: 100 }}>Qty</th>
-                <th style={{ padding: "10px 12px", textAlign: "right", fontSize: 12, color: "var(--text-muted)", fontWeight: 600, width: 130 }}>Price (₹)</th>
-                <th style={{ padding: "10px 12px", textAlign: "right", fontSize: 12, color: "var(--text-muted)", fontWeight: 600, width: 130 }}>Total (₹)</th>
-                <th style={{ width: 48 }}></th>
-              </tr>
-            </thead>
-            <tbody>
+          {isMobile ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: "12px 16px" }}>
               {rows.map((row, i) => (
-                <tr key={i} style={{ borderTop: "1px solid var(--border)" }}>
-                  <td style={{ padding: "8px 16px" }}>
-                    <select value={row.itemName} onChange={e => updateRow(i, "itemName", e.target.value)} style={{
-                      width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid var(--border)", background: "var(--bg)", color: "var(--text)", fontSize: 13,
-                    }}>
-                      <option value="">-- Select Item --</option>
-                      {allItems.map(it => <option key={it._id} value={it.name}>{it.name}</option>)}
-                    </select>
-                  </td>
-                  <td style={{ padding: "8px 12px" }}>
-                    <input type="number" value={row.quantity} min="0" step="0.01" onChange={e => updateRow(i, "quantity", e.target.value)} style={{ width: "100%", padding: "8px 8px", borderRadius: 6, border: "1px solid var(--border)", background: "var(--bg)", color: "var(--text)", fontSize: 13, textAlign: "center" }} />
-                  </td>
-                  <td style={{ padding: "8px 12px" }}>
-                    <input type="number" value={row.price} min="0" step="0.01" onChange={e => updateRow(i, "price", e.target.value)} style={{ width: "100%", padding: "8px 8px", borderRadius: 6, border: "1px solid var(--border)", background: "var(--bg)", color: "var(--text)", fontSize: 13, textAlign: "right" }} />
-                  </td>
-                  <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 600, color: "var(--text)", fontSize: 14 }}>
-                    {row.total.toFixed(2)}
-                  </td>
-                  <td style={{ padding: "8px 8px", textAlign: "center" }}>
-                    <button onClick={() => removeRow(i)} style={{ background: "none", border: "none", cursor: "pointer", color: "#dc2626", fontSize: 16, padding: 4 }}>×</button>
-                  </td>
-                </tr>
+                <div key={i} style={{ padding: 12, border: "1px solid var(--border)", borderRadius: 8, background: "var(--sidebar)", position: "relative" }}>
+                  <button onClick={() => removeRow(i)} style={{ position: "absolute", top: 8, right: 8, background: "none", border: "none", cursor: "pointer", color: "#dc2626", fontSize: 20, padding: 4, lineHeight: 1 }}>×</button>
+                  <div style={{ display: "flex", gap: 10, marginBottom: 10, paddingRight: 24 }}>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4, display: "block" }}>Item Name</label>
+                      <select value={row.itemName} onChange={e => updateRow(i, "itemName", e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid var(--border)", background: "var(--bg)", color: "var(--text)", fontSize: 13 }}>
+                        <option value="">-- Select Item --</option>
+                        {allItems.map(it => <option key={it._id} value={it.name}>{it.name}</option>)}
+                      </select>
+                    </div>
+                    <div style={{ width: 80 }}>
+                      <label style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4, display: "block" }}>Qty</label>
+                      <input type="number" value={row.quantity} min="0" step="0.01" onChange={e => updateRow(i, "quantity", e.target.value)} style={{ width: "100%", padding: "8px", borderRadius: 6, border: "1px solid var(--border)", background: "var(--bg)", color: "var(--text)", fontSize: 13, textAlign: "center", boxSizing: "border-box" }} />
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 10 }}>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4, display: "block" }}>Price (₹)</label>
+                      <input type="number" value={row.price} min="0" step="0.01" onChange={e => updateRow(i, "price", e.target.value)} style={{ width: "100%", padding: "8px", borderRadius: 6, border: "1px solid var(--border)", background: "var(--bg)", color: "var(--text)", fontSize: 13, boxSizing: "border-box" }} />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4, display: "block" }}>Total (₹)</label>
+                      <div style={{ padding: "8px 12px", background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 6, fontSize: 13, fontWeight: 600, color: "var(--text)", boxSizing: "border-box", display: "flex", alignItems: "center" }}>
+                        {row.total.toFixed(2)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+          ) : (
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ background: "var(--sidebar)" }}>
+                  <th style={{ padding: "10px 16px", textAlign: "left", fontSize: 12, color: "var(--text-muted)", fontWeight: 600 }}>Item Name</th>
+                  <th style={{ padding: "10px 12px", textAlign: "center", fontSize: 12, color: "var(--text-muted)", fontWeight: 600, width: 100 }}>Qty</th>
+                  <th style={{ padding: "10px 12px", textAlign: "right", fontSize: 12, color: "var(--text-muted)", fontWeight: 600, width: 130 }}>Price (₹)</th>
+                  <th style={{ padding: "10px 12px", textAlign: "right", fontSize: 12, color: "var(--text-muted)", fontWeight: 600, width: 130 }}>Total (₹)</th>
+                  <th style={{ width: 48 }}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row, i) => (
+                  <tr key={i} style={{ borderTop: "1px solid var(--border)" }}>
+                    <td style={{ padding: "8px 16px" }}>
+                      <select value={row.itemName} onChange={e => updateRow(i, "itemName", e.target.value)} style={{
+                        width: "100%", minWidth: "150px", padding: "8px 10px", borderRadius: 6, border: "1px solid var(--border)", background: "var(--bg)", color: "var(--text)", fontSize: 13,
+                      }}>
+                        <option value="">-- Select Item --</option>
+                        {allItems.map(it => <option key={it._id} value={it.name}>{it.name}</option>)}
+                      </select>
+                    </td>
+                    <td style={{ padding: "8px 12px" }}>
+                      <input type="number" value={row.quantity} min="0" step="0.01" onChange={e => updateRow(i, "quantity", e.target.value)} style={{ width: "100%", padding: "8px 8px", borderRadius: 6, border: "1px solid var(--border)", background: "var(--bg)", color: "var(--text)", fontSize: 13, textAlign: "center" }} />
+                    </td>
+                    <td style={{ padding: "8px 12px" }}>
+                      <input type="number" value={row.price} min="0" step="0.01" onChange={e => updateRow(i, "price", e.target.value)} style={{ width: "100%", padding: "8px 8px", borderRadius: 6, border: "1px solid var(--border)", background: "var(--bg)", color: "var(--text)", fontSize: 13, textAlign: "right" }} />
+                    </td>
+                    <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 600, color: "var(--text)", fontSize: 14 }}>
+                      {row.total.toFixed(2)}
+                    </td>
+                    <td style={{ padding: "8px 8px", textAlign: "center" }}>
+                      <button onClick={() => removeRow(i)} style={{ background: "none", border: "none", cursor: "pointer", color: "#dc2626", fontSize: 16, padding: 4 }}>×</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
 
@@ -1140,33 +1240,64 @@ function HistoryPage({ toast, company, isMobile }) {
       </div>
       {loading ? <div style={{ textAlign: "center", color: "var(--text-muted)", padding: 40 }}>Loading...</div> :
         bills.length === 0 ? <div style={{ textAlign: "center", color: "var(--text-muted)", padding: 60 }}>No bills found.</div> :
-        <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 12, overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 600 }}>
-            <thead>
-              <tr style={{ background: "var(--sidebar)" }}>
-                {["Bill #", "Date", "Party", "Items", "Grand Total", "Actions"].map(h => (
-                  <th key={h} style={{ padding: "12px 16px", textAlign: h === "Grand Total" ? "right" : "left", fontSize: 12, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
+        <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 12 }}>
+         <div style={{ overflowX: "auto" }}>
+          {isMobile ? (
+            <div style={{ display: "flex", flexDirection: "column" }}>
               {bills.map((bill, i) => (
-                <tr key={bill._id} style={{ borderTop: i > 0 ? "1px solid var(--border)" : "none" }}>
-                  <td style={{ padding: "13px 16px", fontWeight: 700, color: "#2563eb", fontSize: 14 }}>#{String(bill.billNumber).padStart(4, "0")}</td>
-                  <td style={{ padding: "13px 16px", color: "var(--text)", fontSize: 13 }}>{formatDate(bill.billDate)}</td>
-                  <td style={{ padding: "13px 16px", color: "var(--text)", fontWeight: 500 }}>{bill.party?.companyName}</td>
-                  <td style={{ padding: "13px 16px", color: "var(--text-muted)", fontSize: 13 }}>{bill.items?.length} item{bill.items?.length !== 1 ? "s" : ""}</td>
-                  <td style={{ padding: "13px 16px", textAlign: "right", fontWeight: 700, color: "var(--text)", fontSize: 15 }}>{formatCurrency(bill.grandTotal)}</td>
-                  <td style={{ padding: "13px 16px" }}>
+                <div key={bill._id} style={{ padding: 16, borderBottom: i < bills.length - 1 ? "1px solid var(--border)" : "none", display: "flex", flexDirection: "column", gap: 12 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                      <span style={{ fontWeight: 700, color: "#2563eb", fontSize: 15 }}>#{String(bill.billNumber).padStart(4, "0")}</span>
+                      <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{formatDate(bill.billDate)}</span>
+                    </div>
+                    <div style={{ textAlign: "right", display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-end" }}>
+                      <span style={{ fontWeight: 600, color: "var(--text)", fontSize: 14 }}>{bill.party?.companyName}</span>
+                      <span style={{ fontSize: 12, color: "var(--text-muted)", background: "var(--sidebar)", padding: "2px 8px", borderRadius: 12 }}>{bill.items?.length} item{bill.items?.length !== 1 ? "s" : ""}</span>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px dashed var(--border)", paddingTop: 12 }}>
+                    <div style={{ display: "flex", flexDirection: "column" }}>
+                      <span style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 2 }}>Grand Total</span>
+                      <span style={{ fontWeight: 700, color: "var(--text)", fontSize: 16 }}>{formatCurrency(bill.grandTotal)}</span>
+                    </div>
                     <div style={{ display: "flex", gap: 6 }}>
                       <Btn variant="secondary" onClick={() => setPreview(bill)} style={{ padding: "6px 12px", fontSize: 12 }}><Eye size={14} /> View</Btn>
                       <Btn variant="ghost" onClick={() => del(bill._id)} style={{ padding: "6px 10px" }}><Trash2 size={14} /></Btn>
                     </div>
-                  </td>
-                </tr>
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+          ) : (
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ background: "var(--sidebar)" }}>
+                  {["Bill #", "Date", "Party", "Items", "Grand Total", "Actions"].map(h => (
+                    <th key={h} style={{ padding: "12px 16px", textAlign: h === "Grand Total" ? "right" : "left", fontSize: 12, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {bills.map((bill, i) => (
+                  <tr key={bill._id} style={{ borderTop: i > 0 ? "1px solid var(--border)" : "none" }}>
+                    <td style={{ padding: "13px 16px", fontWeight: 700, color: "#2563eb", fontSize: 14 }}>#{String(bill.billNumber).padStart(4, "0")}</td>
+                    <td style={{ padding: "13px 16px", color: "var(--text)", fontSize: 13 }}>{formatDate(bill.billDate)}</td>
+                    <td style={{ padding: "13px 16px", color: "var(--text)", fontWeight: 500 }}>{bill.party?.companyName}</td>
+                    <td style={{ padding: "13px 16px", color: "var(--text-muted)", fontSize: 13 }}>{bill.items?.length} item{bill.items?.length !== 1 ? "s" : ""}</td>
+                    <td style={{ padding: "13px 16px", textAlign: "right", fontWeight: 700, color: "var(--text)", fontSize: 15 }}>{formatCurrency(bill.grandTotal)}</td>
+                    <td style={{ padding: "13px 16px" }}>
+                      <div style={{ display: "flex", gap: 6 }}>
+                        <Btn variant="secondary" onClick={() => setPreview(bill)} style={{ padding: "6px 12px", fontSize: 12 }}><Eye size={14} /> View</Btn>
+                        <Btn variant="ghost" onClick={() => del(bill._id)} style={{ padding: "6px 10px" }}><Trash2 size={14} /></Btn>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
         </div>
       }
       {preview && <BillPreview bill={preview} onClose={() => setPreview(null)} company={company} />}
@@ -1211,8 +1342,8 @@ export default function App() {
         </header>
       )}
 
-      <main style={{ flex: 1, padding: isMobile ? "20px 16px 80px" : "32px 36px", overflowY: "auto", minWidth: 0 }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+      <main style={{ flex: 1, padding: isMobile ? "20px 16px 80px" : "32px 36px", overflowY: "auto", overflowX: "hidden", minWidth: 0 }}>
+        <div style={{ maxWidth: "100%", margin: "0 auto",padding: isMobile < 600 ? "0 10px" : 0 }}>
           {page === "billing" && <BillingPage toast={toast} company={company} isMobile={isMobile} />}
           {page === "history" && <HistoryPage toast={toast} company={company} isMobile={isMobile} />}
           {page === "parties" && <PartiesPage toast={toast} isMobile={isMobile} />}
