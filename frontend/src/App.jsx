@@ -197,14 +197,22 @@ function Sidebar({ page, setPage, dark, setDark, company, showInstall, onInstall
             width: 36,
             height: 36,
             borderRadius: 8,
-            background: "#2563eb",
+            background: "#111",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             marginBottom: 10,
           }}
         >
-          <span style={{ color: "#fff", fontSize: 18 }}>₹</span>
+                          <img
+                  src="/favicon.png"
+                  alt="logo"
+                  style={{
+                    width: 22,
+                    height: 22,
+                    objectFit: "contain"
+                  }}
+                />
         </div>
 
         <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>
