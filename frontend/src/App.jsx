@@ -165,7 +165,7 @@ function Btn({ children, variant = "primary", loading, ...props }) {
   );
 }
 
-function Sidebar({ page, setPage, dark, setDark, company }) {
+function Sidebar({ page, setPage, dark, setDark, company, showInstall, onInstall }) {
   const navItems = [
     { id: "billing", label: "Create Bill", icon: Receipt },
     { id: "history", label: "Bill History", icon: History },
@@ -279,6 +279,11 @@ function Sidebar({ page, setPage, dark, setDark, company }) {
 
       {/* Dark Mode Toggle */}
       <div style={{ padding: "12px 16px", borderTop: "1px solid var(--border)" }}>
+        {showInstall && (
+          <button onClick={onInstall} style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: "none", background: "#16a34a", color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 8, transition: "background 0.2s" }}>
+            <Download size={16} /> Install App
+          </button>
+        )}
         <button
           onClick={() => setDark(!dark)}
           style={{
@@ -1313,6 +1318,30 @@ export default function App() {
   const { width } = useWindowSize();
   const isMobile = width < 768;
 
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [showInstall, setShowInstall] = useState(false);
+
+  useEffect(() => {
+    const handler = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowInstall(true);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstallClick = () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then((choiceResult) => {
+      if (choiceResult.outcome === 'accepted') {
+        setShowInstall(false);
+      }
+      setDeferredPrompt(null);
+    });
+  };
+
   useEffect(() => {
     api.getProfile().then(setCompany).catch(() => {});
   }, []);
@@ -1330,7 +1359,7 @@ export default function App() {
 
   return (
     <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", minHeight: "100vh", background: dark ? "#0f172a" : "#f1f5f9", ...theme }}>
-      {!isMobile && <Sidebar page={page} setPage={setPage} dark={dark} setDark={setDark} company={company} />}
+      {!isMobile && <Sidebar page={page} setPage={setPage} dark={dark} setDark={setDark} company={company} showInstall={showInstall} onInstall={handleInstallClick} />}
       
       {isMobile && (
         <header style={{ background: "var(--sidebar)", padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--border)", position: "sticky", top: 0, zIndex: 10 }}>
@@ -1338,7 +1367,16 @@ export default function App() {
             <div style={{ width: 32, height: 32, borderRadius: 8, background: "#2563eb", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700 }}>₹</div>
             <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text)" }}>{company.companyName}</div>
           </div>
-          <button onClick={() => setDark(!dark)} style={{ background: "none", border: "none", fontSize: 20 }}>{dark ? <Sun size={14} /> : <Moon size={14} />}</button>
+          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+            {showInstall && (
+              <button 
+                onClick={handleInstallClick} 
+                style={{ background: "#16a34a", color: "#fff", border: "none", padding: "6px 12px", borderRadius: 8, fontSize: 13, fontWeight: 600, display: "flex", gap: 6, alignItems: "center", cursor: "pointer" }}>
+                <Download size={14} /> Install
+              </button>
+            )}
+            <button onClick={() => setDark(!dark)} style={{ background: "none", border: "none", fontSize: 20, display: "flex", color: "var(--text)" }}>{dark ? <Sun size={18} /> : <Moon size={18} />}</button>
+          </div>
         </header>
       )}
 
