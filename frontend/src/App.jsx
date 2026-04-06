@@ -197,7 +197,7 @@ function Sidebar({ page, setPage, dark, setDark, company, showInstall, onInstall
             width: 36,
             height: 36,
             borderRadius: 8,
-            background: "#111",
+            background: dark ? "#fff" : "#111",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -590,7 +590,7 @@ function ItemsPage({ toast }) {
   {/* ✅ Desktop Header */}
   {!isMobile && (
     <thead>
-      <tr style={{ background: "var(--sidebar)" }}>
+      <tr style={{ background: "var(--sidebar)", color: "var(--text)" }}>
         <th style={{ padding: "12px 16px", textAlign: "left" }}>Item Name</th>
         <th style={{ padding: "12px 16px", textAlign: "center" }}>Unit</th>
         <th style={{ padding: "12px 16px", textAlign: "right" }}>Price</th>
@@ -608,7 +608,7 @@ function ItemsPage({ toast }) {
         <tr key={item._id}>
           <td colSpan="4" style={{ padding: 12, borderBottom: "1px solid var(--border)" }}>
             
-            <div style={{ fontWeight: 600, fontSize: 15 }}>
+            <div style={{ fontWeight: 600, fontSize: 15, color: "var(--text)" }}>
               {item.name}
             </div>
 
@@ -638,7 +638,7 @@ function ItemsPage({ toast }) {
       ) : (
 
         // 💻 DESKTOP
-        <tr key={item._id}>
+        <tr key={item._id} style={{ color: "var(--text)" }}>
           <td style={{ padding: "12px 16px" }}>{item.name}</td>
           <td style={{ textAlign: "center" }}>{item.unit}</td>
           <td style={{ textAlign: "right" }}>₹{item.price}</td>
@@ -1326,6 +1326,17 @@ export default function App() {
   const { width } = useWindowSize();
   const isMobile = width < 768;
 
+  const [showSplash, setShowSplash] = useState(true);
+
+  useEffect(() => {
+    if (window.innerWidth >= 768) {
+      setShowSplash(false);
+      return;
+    }
+    const timer = setTimeout(() => setShowSplash(false), 2200);
+    return () => clearTimeout(timer);
+  }, []);
+
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showInstall, setShowInstall] = useState(false);
 
@@ -1363,6 +1374,30 @@ export default function App() {
     "--border": dark ? "#334155" : "#e2e8f0",
   };
 
+  if (showSplash && isMobile) {
+    return (
+      <div style={{
+        position: "fixed", inset: 0, background: "#000",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        zIndex: 99999
+      }}>
+        <style>{`
+          @keyframes splash-pulse {
+            0% { transform: scale(0.85); opacity: 0.8; }
+            50% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); opacity: 0.9; }
+          }
+        `}</style>
+        <div style={{
+          display: "flex", alignItems: "center", justifyContent: "center",
+          animation: "splash-pulse 1.8s ease-in-out infinite"
+        }}>
+          <img src="/favicon.png" alt="logo" style={{ width: 80, height: 80, borderRadius: 20, objectFit: "cover", overflow: "hidden" }} />
+        </div>
+      </div>
+    );
+  }
+
   if (!company) return <div style={{...theme, background: "var(--bg)", color: "var(--text)", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center"}}>Loading app...</div>;
 
   return (
@@ -1377,7 +1412,7 @@ export default function App() {
               width: 40,
               height: 40,
               borderRadius: 10,
-              background: "#111", // ✅ black
+              background: dark ? "#fff" : "#111", // ✅ dark mode white / light mode black
               display: "flex",
               alignItems: "center",
               justifyContent: "center"
