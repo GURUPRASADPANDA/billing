@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback, useRef, createContext, useContext } from "react";
-import { Receipt, History, Users, Box, User, Pencil, Trash2, Phone, MapPin, Eye, Printer, Sun, Moon, Check, Share2, Download, X} from "lucide-react";
+import { Receipt, History, Users, Box, User, Pencil, Trash2, Phone, MapPin, Eye, Printer, Sun, Moon, Check, Share2, Download, X, Archive} from "lucide-react";
 import html2pdf from "html2pdf.js";
 
 
 
-const API_BASE = `${process.env.REACT_APP_API_URL}/api`;
+const API_BASE = process.env.NODE_ENV === "production" 
+  ? "https://billing-0b7n.onrender.com/api" 
+  : "http://localhost:5000/api";
 
 async function apiFetch(path, options = {}) {
   const res = await fetch(API_BASE + path, {
@@ -37,6 +39,9 @@ const api = {
   getBill: (id) => apiFetch(`/bills/${id}`),
   getProfile: () => apiFetch("/profile"),
   updateProfile: (data) => apiFetch("/profile", { method: "PUT", body: JSON.stringify(data) }),
+  getTrash: (type) => apiFetch(`/trash/${type}`),
+  restoreTrash: (type, id) => apiFetch(`/trash/restore/${type}/${id}`, { method: "POST" }),
+  permanentDelete: (type, id) => apiFetch(`/trash/permanent/${type}/${id}`, { method: "DELETE" }),
 };
 
 function useWindowSize() {
@@ -172,6 +177,7 @@ function Sidebar({ page, setPage, dark, setDark, company, showInstall, onInstall
     { id: "parties", label: "Parties", icon: Users },
     { id: "items", label: "Items", icon: Box },
     { id: "profile", label: "Profile", icon: User },
+    { id: "trash", label: "Trash", icon: Archive },
   ];
 
   return (
@@ -324,6 +330,7 @@ function BottomNav({ page, setPage }) {
     { id: "parties", label: "Parties", icon: Users },
     { id: "items", label: "Items", icon: Box },
     { id: "profile", label: "Profile", icon: User },
+    { id: "trash", label: "Trash", icon: Archive },
   ];
 
   return (
@@ -1419,6 +1426,88 @@ function HistoryPage({ toast, company, isMobile }) {
     </div>
   );
 }
+function TrashPage({ toast }) {
+  const [activeTab, setActiveTab] = useState("bills");
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await api.getTrash(activeTab);
+      setItems(data);
+    } catch (e) { toast(e.message, "error"); }
+    finally { setLoading(false); }
+  }, [activeTab, toast]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const restore = async (id) => {
+    try {
+      await api.restoreTrash(activeTab, id);
+      toast("Restored successfully", "success");
+      load();
+    } catch (e) { toast(e.message, "error"); }
+  };
+
+  const permaDelete = async (id) => {
+    if (!confirm("Permanently delete? This cannot be undone.")) return;
+    try {
+      await api.permanentDelete(activeTab, id);
+      toast("Permanently deleted", "success");
+      load();
+    } catch (e) { toast(e.message, "error"); }
+  };
+
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 24 }}>
+        <Archive size={20} />
+        <h2 style={{ margin: 0, fontSize: 22, fontWeight: 600, color: "var(--text)" }}>Trash / Backup</h2>
+      </div>
+      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+        {["bills", "parties", "items"].map(tab => (
+          <Btn key={tab} variant={activeTab === tab ? "primary" : "secondary"} onClick={() => setActiveTab(tab)} style={{ textTransform: "capitalize" }}>
+            {tab}
+          </Btn>
+        ))}
+      </div>
+      
+      {loading ? <div style={{ textAlign: "center", color: "var(--text-muted)", padding: 40 }}>Loading...</div> :
+       items.length === 0 ? <div style={{ textAlign: "center", color: "var(--text-muted)", padding: 60 }}>Trash is empty.</div> :
+       <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 12, overflowX: "auto" }}>
+         <table style={{ width: "100%", borderCollapse: "collapse" }}>
+           <thead>
+             <tr style={{ background: "var(--sidebar)", color: "var(--text)" }}>
+               <th style={{ padding: "12px 16px", textAlign: "left" }}>Name / Info</th>
+               <th style={{ padding: "12px 16px", textAlign: "left" }}>Deleted At</th>
+               <th style={{ padding: "12px 16px", textAlign: "right" }}>Actions</th>
+             </tr>
+           </thead>
+           <tbody>
+             {items.map(item => (
+               <tr key={item._id} style={{ borderBottom: "1px solid var(--border)", color: "var(--text)" }}>
+                 <td style={{ padding: "12px 16px" }}>
+                   {activeTab === "bills" ? `#${String(item.billNumber).padStart(4, "0")} - ${item.party?.companyName}` :
+                    activeTab === "parties" ? item.companyName :
+                    item.name}
+                 </td>
+                 <td style={{ padding: "12px 16px" }}>{new Date(item.deletedAt).toLocaleDateString()}</td>
+                 <td style={{ padding: "12px 16px", textAlign: "right" }}>
+                   <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
+                     <Btn variant="ghost" onClick={() => restore(item._id)} style={{ padding: "6px 12px", color: "#16a34a" }}>Restore</Btn>
+                     <Btn variant="ghost" onClick={() => permaDelete(item._id)} style={{ padding: "6px 12px", color: "#dc2626" }}><Trash2 size={14}/></Btn>
+                   </div>
+                 </td>
+               </tr>
+             ))}
+           </tbody>
+         </table>
+       </div>
+      }
+    </div>
+  );
+}
 
 export default function App() {
   const [dark, setDark] = useState(false);
@@ -1551,6 +1640,7 @@ export default function App() {
           {page === "parties" && <PartiesPage toast={toast} isMobile={isMobile} />}
           {page === "items" && <ItemsPage toast={toast} isMobile={isMobile} />}
           {page === "profile" && <ProfilePage toast={toast} company={company} setCompany={setCompany} />}
+          {page === "trash" && <TrashPage toast={toast} />}
         </div>
       </main>
 

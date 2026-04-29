@@ -5,6 +5,7 @@ const partySchema = new mongoose.Schema({
   gstNumber: { type: String, trim: true, default: '' },
   address: { type: String, trim: true, default: '' },
   phone: { type: String, trim: true, default: '' },
+  deletedAt: { type: Date, default: null, index: { expireAfterSeconds: 2592000 } }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Party', partySchema);

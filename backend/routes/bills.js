@@ -6,7 +6,7 @@ const Counter = require('../models/Counter');
 router.get('/', async (req, res) => {
   try {
     const { startDate, endDate, partyId } = req.query;
-    let query = {};
+    let query = { deletedAt: null };
     if (startDate || endDate) {
       query.billDate = {};
       if (startDate) query.billDate.$gte = new Date(startDate);
@@ -78,23 +78,9 @@ router.post('/', async (req, res) => {
 
 router.delete('/:id', async (req, res) => {
   try {
-    const bill = await Bill.findByIdAndDelete(req.params.id);
+    const bill = await Bill.findByIdAndUpdate(req.params.id, { deletedAt: new Date() }, { new: true });
     if (!bill) return res.status(404).json({ error: 'Bill not found' });
-
-    const counter = await Counter.findById('billNumber');
-    if (counter) {
-      if (counter.seq === bill.billNumber) {
-        counter.seq -= 1;
-      } else {
-        if (!counter.reusable) counter.reusable = [];
-        if (!counter.reusable.includes(bill.billNumber)) {
-          counter.reusable.push(bill.billNumber);
-        }
-      }
-      await counter.save();
-    }
-
-    res.json({ message: 'Bill deleted successfully' });
+    res.json({ message: 'Bill moved to trash successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

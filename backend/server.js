@@ -29,6 +29,7 @@ app.use('/api/parties', require('./routes/parties'));
 app.use('/api/items', require('./routes/items'));
 app.use('/api/bills', require('./routes/bills'));
 app.use('/api/profile', require('./routes/profile'));
+app.use('/api/trash', require('./routes/trash'));
 
 // ✅ Health Route (for uptime ping)
 app.get('/api/health', (req, res) => {

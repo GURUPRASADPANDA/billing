@@ -5,7 +5,7 @@ const Party = require('../models/Party');
 router.get('/', async (req, res) => {
   try {
     const { search } = req.query;
-    let query = {};
+    let query = { deletedAt: null };
     if (search) {
       query.companyName = { $regex: search, $options: 'i' };
     }
@@ -56,9 +56,9 @@ router.put('/:id', async (req, res) => {
 
 router.delete('/:id', async (req, res) => {
   try {
-    const party = await Party.findByIdAndDelete(req.params.id);
+    const party = await Party.findByIdAndUpdate(req.params.id, { deletedAt: new Date() }, { new: true });
     if (!party) return res.status(404).json({ error: 'Party not found' });
-    res.json({ message: 'Party deleted successfully' });
+    res.json({ message: 'Party moved to trash successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

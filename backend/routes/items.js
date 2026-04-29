@@ -5,7 +5,7 @@ const Item = require('../models/Item');
 router.get('/', async (req, res) => {
   try {
     const { search } = req.query;
-    let query = {};
+    let query = { deletedAt: null };
     if (search) {
       query.name = { $regex: search, $options: 'i' };
     }
@@ -58,9 +58,9 @@ router.put('/:id', async (req, res) => {
 
 router.delete('/:id', async (req, res) => {
   try {
-    const item = await Item.findByIdAndDelete(req.params.id);
+    const item = await Item.findByIdAndUpdate(req.params.id, { deletedAt: new Date() }, { new: true });
     if (!item) return res.status(404).json({ error: 'Item not found' });
-    res.json({ message: 'Item deleted successfully' });
+    res.json({ message: 'Item moved to trash successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

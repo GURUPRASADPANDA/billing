@@ -23,6 +23,7 @@ const billSchema = new mongoose.Schema({
   gstAmount: { type: Number, default: 0 },
   grandTotal: { type: Number, required: true },
   notes: { type: String, default: '' },
+  deletedAt: { type: Date, default: null, index: { expireAfterSeconds: 2592000 } }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Bill', billSchema);
