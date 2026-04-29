@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, createContext, useContext } from "react";
-import { Receipt, History, Users, Box, User, Pencil, Trash2, Phone, MapPin, Eye, Printer, Sun, Moon, Check, Share2, Download, X, Archive, RefreshCw} from "lucide-react";
+import { Receipt, History, Users, Box, User, Pencil, Trash2, Phone, MapPin, Eye, Printer, Sun, Moon, Check, Share2, Download, X, Archive, RefreshCw, CheckCircle, XCircle, Info} from "lucide-react";
 import html2pdf from "html2pdf.js";
 
 
@@ -80,7 +80,10 @@ function Toast({ toasts, remove }) {
           border: `1px solid ${t.type === "error" ? "#fca5a5" : t.type === "success" ? "#86efac" : "#93c5fd"}`,
           boxShadow: "0 4px 12px rgba(0,0,0,0.1)", minWidth: 220, maxWidth: 320,
         }}>
-          {t.type === "success" ? "✓ " : t.type === "error" ? "✕ " : "ℹ "}{t.message}
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {t.type === "success" ? <CheckCircle size={16} /> : t.type === "error" ? <XCircle size={16} /> : <Info size={16} />}
+            <span>{t.message}</span>
+          </div>
         </div>
       ))}
     </div>
@@ -316,7 +319,7 @@ function Sidebar({ page, setPage, dark, setDark, company, showInstall, onInstall
             transition: "all 0.2s ease",
           }}
         >
-          {dark ? "☀️ Light Mode" : "🌙 Dark Mode"}
+          {dark ? <><Sun size={16} /> Light Mode</> : <><Moon size={16} /> Dark Mode</>}
         </button>
         <button
           onClick={onUpdate}
@@ -1661,8 +1664,9 @@ export default function App() {
             )}
             <button 
               onClick={handleUpdateApp} 
-              style={{ background: updateAvailable ? "#f59e0b" : "var(--bg)", color: updateAvailable ? "#fff" : "var(--text-muted)", border: updateAvailable ? "none" : "1px solid var(--border)", padding: "6px 12px", borderRadius: 8, fontSize: 13, fontWeight: 600, display: "flex", gap: 6, alignItems: "center", cursor: "pointer", boxShadow: updateAvailable ? "0 0 10px rgba(245, 158, 11, 0.6)" : "none" }}>
-              <RefreshCw size={14} /> Update
+              title="Force Refresh / Update"
+              style={{ background: updateAvailable ? "#f59e0b" : "transparent", color: updateAvailable ? "#fff" : "var(--text-muted)", border: "none", width: 34, height: 34, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: updateAvailable ? "0 0 10px rgba(245, 158, 11, 0.6)" : "none", transition: "all 0.2s" }}>
+              <RefreshCw size={18} />
             </button>
             <button onClick={() => setDark(!dark)} style={{ background: "none", border: "none", fontSize: 20, display: "flex", color: "var(--text)" }}>{dark ? <Sun size={18} /> : <Moon size={18} />}</button>
           </div>
