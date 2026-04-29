@@ -318,14 +318,12 @@ function Sidebar({ page, setPage, dark, setDark, company, showInstall, onInstall
         >
           {dark ? "☀️ Light Mode" : "🌙 Dark Mode"}
         </button>
-        {updateAvailable && (
-          <button
-            onClick={onUpdate}
-            style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: "none", background: "#f59e0b", color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 8, transition: "background 0.2s", boxShadow: "0 0 10px rgba(245, 158, 11, 0.6)" }}
-          >
-            <RefreshCw size={16} /> Update App
-          </button>
-        )}
+        <button
+          onClick={onUpdate}
+          style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: updateAvailable ? "none" : "1px solid var(--border)", background: updateAvailable ? "#f59e0b" : "var(--bg)", color: updateAvailable ? "#fff" : "var(--text-muted)", cursor: "pointer", fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 8, transition: "all 0.2s", boxShadow: updateAvailable ? "0 0 10px rgba(245, 158, 11, 0.6)" : "none" }}
+        >
+          <RefreshCw size={16} /> Update App
+        </button>
       </div>
     </aside>
   );
@@ -1534,6 +1532,13 @@ export default function App() {
   const handleUpdateApp = () => {
     if (swRegistration && swRegistration.waiting) {
       swRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
+    } else {
+      // Clear caches to ensure hard reload
+      if ('caches' in window) {
+        caches.keys().then((names) => {
+          for (let name of names) caches.delete(name);
+        });
+      }
     }
     window.location.reload();
   };
@@ -1654,13 +1659,11 @@ export default function App() {
                 <Download size={14} /> Install
               </button>
             )}
-            {updateAvailable && (
-              <button 
-                onClick={handleUpdateApp} 
-                style={{ background: "#f59e0b", color: "#fff", border: "none", padding: "6px 12px", borderRadius: 8, fontSize: 13, fontWeight: 600, display: "flex", gap: 6, alignItems: "center", cursor: "pointer", boxShadow: "0 0 10px rgba(245, 158, 11, 0.6)" }}>
-                <RefreshCw size={14} /> Update
-              </button>
-            )}
+            <button 
+              onClick={handleUpdateApp} 
+              style={{ background: updateAvailable ? "#f59e0b" : "var(--bg)", color: updateAvailable ? "#fff" : "var(--text-muted)", border: updateAvailable ? "none" : "1px solid var(--border)", padding: "6px 12px", borderRadius: 8, fontSize: 13, fontWeight: 600, display: "flex", gap: 6, alignItems: "center", cursor: "pointer", boxShadow: updateAvailable ? "0 0 10px rgba(245, 158, 11, 0.6)" : "none" }}>
+              <RefreshCw size={14} /> Update
+            </button>
             <button onClick={() => setDark(!dark)} style={{ background: "none", border: "none", fontSize: 20, display: "flex", color: "var(--text)" }}>{dark ? <Sun size={18} /> : <Moon size={18} />}</button>
           </div>
         </header>
