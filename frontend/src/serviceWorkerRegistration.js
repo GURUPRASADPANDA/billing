@@ -20,6 +20,18 @@ export function register(config) {
         .register(swUrl)
         .then((registration) => {
           console.log('Service Worker registered:', registration);
+          registration.onupdatefound = () => {
+            const installingWorker = registration.installing;
+            if (installingWorker == null) return;
+            installingWorker.onstatechange = () => {
+              if (installingWorker.state === 'installed') {
+                if (navigator.serviceWorker.controller) {
+                  console.log('New content is available; please refresh.');
+                  document.dispatchEvent(new CustomEvent('pwa-update-available', { detail: registration }));
+                }
+              }
+            };
+          };
         })
         .catch((error) => {
           console.error('SW registration failed:', error);

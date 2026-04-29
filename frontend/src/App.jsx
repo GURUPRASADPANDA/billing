@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, createContext, useContext } from "react";
-import { Receipt, History, Users, Box, User, Pencil, Trash2, Phone, MapPin, Eye, Printer, Sun, Moon, Check, Share2, Download, X, Archive} from "lucide-react";
+import { Receipt, History, Users, Box, User, Pencil, Trash2, Phone, MapPin, Eye, Printer, Sun, Moon, Check, Share2, Download, X, Archive, RefreshCw} from "lucide-react";
 import html2pdf from "html2pdf.js";
 
 
@@ -170,7 +170,7 @@ function Btn({ children, variant = "primary", loading, ...props }) {
   );
 }
 
-function Sidebar({ page, setPage, dark, setDark, company, showInstall, onInstall }) {
+function Sidebar({ page, setPage, dark, setDark, company, showInstall, onInstall, updateAvailable, onUpdate }) {
   const navItems = [
     { id: "billing", label: "Create Bill", icon: Receipt },
     { id: "history", label: "Bill History", icon: History },
@@ -318,6 +318,14 @@ function Sidebar({ page, setPage, dark, setDark, company, showInstall, onInstall
         >
           {dark ? "☀️ Light Mode" : "🌙 Dark Mode"}
         </button>
+        {updateAvailable && (
+          <button
+            onClick={onUpdate}
+            style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: "none", background: "#f59e0b", color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 8, transition: "background 0.2s", boxShadow: "0 0 10px rgba(245, 158, 11, 0.6)" }}
+          >
+            <RefreshCw size={16} /> Update App
+          </button>
+        )}
       </div>
     </aside>
   );
@@ -1511,6 +1519,24 @@ function TrashPage({ toast }) {
 
 export default function App() {
   const [dark, setDark] = useState(false);
+  const [updateAvailable, setUpdateAvailable] = useState(false);
+  const [swRegistration, setSwRegistration] = useState(null);
+
+  useEffect(() => {
+    const handleUpdate = (e) => {
+      setUpdateAvailable(true);
+      setSwRegistration(e.detail);
+    };
+    document.addEventListener('pwa-update-available', handleUpdate);
+    return () => document.removeEventListener('pwa-update-available', handleUpdate);
+  }, []);
+
+  const handleUpdateApp = () => {
+    if (swRegistration && swRegistration.waiting) {
+      swRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
+    }
+    window.location.reload();
+  };
   const [page, setPage] = useState("billing");
   const { toasts, toast, removeToast } = useToast();
   const [company, setCompany] = useState(null);
@@ -1593,7 +1619,7 @@ export default function App() {
 
   return (
     <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", minHeight: "100vh", background: dark ? "#0f172a" : "#f1f5f9", ...theme }}>
-      {!isMobile && <Sidebar page={page} setPage={setPage} dark={dark} setDark={setDark} company={company} showInstall={showInstall} onInstall={handleInstallClick} />}
+      {!isMobile && <Sidebar page={page} setPage={setPage} dark={dark} setDark={setDark} company={company} showInstall={showInstall} onInstall={handleInstallClick} updateAvailable={updateAvailable} onUpdate={handleUpdateApp} />}
       
       {isMobile && (
         <header style={{ background: "var(--sidebar)", padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--border)", position: "sticky", top: 0, zIndex: 10 }}>
@@ -1626,6 +1652,13 @@ export default function App() {
                 onClick={handleInstallClick} 
                 style={{ background: "#16a34a", color: "#fff", border: "none", padding: "6px 12px", borderRadius: 8, fontSize: 13, fontWeight: 600, display: "flex", gap: 6, alignItems: "center", cursor: "pointer" }}>
                 <Download size={14} /> Install
+              </button>
+            )}
+            {updateAvailable && (
+              <button 
+                onClick={handleUpdateApp} 
+                style={{ background: "#f59e0b", color: "#fff", border: "none", padding: "6px 12px", borderRadius: 8, fontSize: 13, fontWeight: 600, display: "flex", gap: 6, alignItems: "center", cursor: "pointer", boxShadow: "0 0 10px rgba(245, 158, 11, 0.6)" }}>
+                <RefreshCw size={14} /> Update
               </button>
             )}
             <button onClick={() => setDark(!dark)} style={{ background: "none", border: "none", fontSize: 20, display: "flex", color: "var(--text)" }}>{dark ? <Sun size={18} /> : <Moon size={18} />}</button>
