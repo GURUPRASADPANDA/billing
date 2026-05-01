@@ -37,6 +37,7 @@ const api = {
   getNextBillNumber: () => apiFetch("/bills/next-number"),
   createBill: (data) => apiFetch("/bills", { method: "POST", body: JSON.stringify(data) }),
   getBill: (id) => apiFetch(`/bills/${id}`),
+  getBillSummary: () => apiFetch("/bills/summary"),
   getProfile: () => apiFetch("/profile"),
   updateProfile: (data) => apiFetch("/profile", { method: "PUT", body: JSON.stringify(data) }),
   getTrash: (type) => apiFetch(`/trash/${type}`),
@@ -1329,11 +1330,18 @@ function StatementModal({ onClose, company, toast }) {
 
 function HistoryPage({ toast, company, isMobile }) {
   const [bills, setBills] = useState([]);
+  const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [preview, setPreview] = useState(null);
   const [statementModalOpen, setStatementModalOpen] = useState(false);
+
+  const loadSummary = useCallback(async () => {
+    try {
+      setSummary(await api.getBillSummary());
+    } catch (e) { console.error("Failed to load summary", e); }
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -1347,26 +1355,43 @@ function HistoryPage({ toast, company, isMobile }) {
   }, [startDate, endDate, toast]);
 
   useEffect(() => { load(); }, [load]);
+  useEffect(() => { loadSummary(); }, [loadSummary]);
 
   const del = async (id) => {
     if (!confirm("Delete this bill?")) return;
-    try { await apiFetch(`/bills/${id}`, { method: "DELETE" }); toast("Bill deleted", "success"); load(); }
+    try { await apiFetch(`/bills/${id}`, { method: "DELETE" }); toast("Bill deleted", "success"); load(); loadSummary(); }
     catch (e) { toast(e.message, "error"); }
   };
 
   return (
     <div>
       <h2 style={{ margin: "0 0 24px", fontSize: 22, fontWeight: 600, color: "var(--text)" }}><History size={14} /> Bill History</h2>
-      <div style={{ display: "flex", gap: 12, marginBottom: 20, flexWrap: "wrap", alignItems: "flex-end" }}>
-        <div>
-          <label style={{ display: "block", fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>From Date</label>
-          <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} style={{ padding: "9px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg)", color: "var(--text)", fontSize: 13 }} />
+
+      <div style={{ display: "flex", gap: 16, marginBottom: 20, flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-end" }}>
+          <div>
+            <label style={{ display: "block", fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>From Date</label>
+            <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} style={{ padding: "9px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg)", color: "var(--text)", fontSize: 13 }} />
+          </div>
+          <div>
+            <label style={{ display: "block", fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>To Date</label>
+            <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} style={{ padding: "9px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg)", color: "var(--text)", fontSize: 13 }} />
+          </div>
+          <Btn variant="primary" onClick={() => setStatementModalOpen(true)}><Printer size={14} /> Print Statements</Btn>
         </div>
-        <div>
-          <label style={{ display: "block", fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>To Date</label>
-          <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} style={{ padding: "9px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg)", color: "var(--text)", fontSize: 13 }} />
-        </div>
-        <Btn variant="primary" onClick={() => setStatementModalOpen(true)}><Printer size={14} /> Print Statements</Btn>
+
+        {summary && (
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", width: isMobile ? "100%" : "auto" }}>
+            <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, padding: "8px 16px", flex: isMobile ? "1" : "none", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+              <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 2, textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 600 }}>Prev Month</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text)" }}>{formatCurrency(summary.previousMonthTotal)}</div>
+            </div>
+            <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, padding: "8px 16px", flex: isMobile ? "1" : "none", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+              <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 2, textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 600 }}>Curr Month</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: "#2563eb" }}>{formatCurrency(summary.currentMonthTotal)}</div>
+            </div>
+          </div>
+        )}
       </div>
       {loading ? <div style={{ textAlign: "center", color: "var(--text-muted)", padding: 40 }}>Loading...</div> :
         bills.length === 0 ? <div style={{ textAlign: "center", color: "var(--text-muted)", padding: 60 }}>No bills found.</div> :

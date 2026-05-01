@@ -41,6 +41,38 @@ router.get('/next-number', async (req, res) => {
   }
 });
 
+router.get('/summary', async (req, res) => {
+  try {
+    const now = new Date();
+    
+    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const currentMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    
+    const previousMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const previousMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+    
+    const currentMonthBills = await Bill.find({
+      deletedAt: null,
+      billDate: { $gte: currentMonthStart, $lte: currentMonthEnd }
+    });
+    
+    const previousMonthBills = await Bill.find({
+      deletedAt: null,
+      billDate: { $gte: previousMonthStart, $lte: previousMonthEnd }
+    });
+    
+    const currentMonthTotal = currentMonthBills.reduce((sum, bill) => sum + (bill.grandTotal || 0), 0);
+    const previousMonthTotal = previousMonthBills.reduce((sum, bill) => sum + (bill.grandTotal || 0), 0);
+    
+    res.json({
+      currentMonthTotal,
+      previousMonthTotal
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.get('/:id', async (req, res) => {
   try {
     const bill = await Bill.findById(req.params.id);
