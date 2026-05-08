@@ -1320,6 +1320,12 @@ function StatementModal({ onClose, company, toast }) {
                   </tr>
                 ))}
               </tbody>
+              <tfoot>
+                <tr style={{ background: "#f4f4f4", fontWeight: "bold" }}>
+                  <td colSpan="3" style={{ padding: 8, border: "1px solid #ddd", textAlign: "right", color: "#333" }}>Total Amount</td>
+                  <td style={{ padding: 8, border: "1px solid #ddd", textAlign: "right", color: "#333" }}>{formatCurrency(bills.reduce((sum, b) => sum + (b.grandTotal || 0), 0))}</td>
+                </tr>
+              </tfoot>
             </table>
          </div>
        </div>
