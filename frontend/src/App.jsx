@@ -1229,8 +1229,20 @@ function BillingPage({ toast, company, isMobile }) {
 }
 
 function StatementModal({ onClose, company, toast }) {
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [startDate, setStartDate] = useState(() => {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    return `${y}-${m}-01`;
+  });
+  const [endDate, setEndDate] = useState(() => {
+    const d = new Date();
+    const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+    const y = lastDay.getFullYear();
+    const m = String(lastDay.getMonth() + 1).padStart(2, '0');
+    const day = String(lastDay.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  });
   const [bills, setBills] = useState([]);
   const [loading, setLoading] = useState(false);
   const printRef = useRef();
