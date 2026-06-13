@@ -50,6 +50,9 @@ exports.login = async (req, res) => {
     const user = await User.findOne({ username });
 
     if (user && (await user.comparePassword(password))) {
+      user.lastLogin = new Date();
+      await user.save();
+      
       res.json({
         user: {
           _id: user._id,

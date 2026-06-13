@@ -23,6 +23,9 @@ import { TrashPage } from "./pages/TrashPage";
 import { AuthPage } from "./pages/AuthPage";
 import { OnboardingPage } from "./pages/OnboardingPage";
 
+import { AdminLoginPage } from "./pages/admin/AdminLoginPage";
+import { AdminDashboard } from "./pages/admin/AdminDashboard";
+
 import { BillingSkeleton } from "./components/skeletons/BillingSkeleton";
 import { HistorySkeleton } from "./components/skeletons/HistorySkeleton";
 import { PartiesSkeleton } from "./components/skeletons/PartiesSkeleton";
@@ -253,7 +256,40 @@ function AppContent() {
   );
 }
 
+function AdminApp({ adminToken, setAdminToken }) {
+  const { toasts, toast, removeToast } = useToast();
+  return (
+    <>
+      <Routes>
+        <Route path="/admin" element={
+          adminToken 
+            ? <AdminDashboard adminToken={adminToken} logout={() => setAdminToken(null)} toast={toast} /> 
+            : <AdminLoginPage setAdminToken={setAdminToken} toast={toast} />
+        } />
+        <Route path="*" element={<Navigate to="/admin" />} />
+      </Routes>
+      <Toast toasts={toasts} remove={removeToast} />
+    </>
+  );
+}
+
 export default function App() {
+  const [adminToken, setAdminToken] = useState(localStorage.getItem('adminToken') || null);
+
+  const handleSetAdminToken = (token) => {
+    if (token) localStorage.setItem('adminToken', token);
+    else localStorage.removeItem('adminToken');
+    setAdminToken(token);
+  };
+
+  if (window.location.pathname.startsWith('/admin')) {
+    return (
+      <ThemeContext.Provider value={{ dark: false, setDark: () => {} }}>
+        <AdminApp adminToken={adminToken} setAdminToken={handleSetAdminToken} />
+      </ThemeContext.Provider>
+    );
+  }
+
   return (
     <AuthProvider>
       <AppContent />

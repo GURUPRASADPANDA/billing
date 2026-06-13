@@ -6,7 +6,7 @@ let currentToken = null;
 
 async function apiFetch(path, options = {}) {
   const headers = { "Content-Type": "application/json", ...options.headers };
-  if (currentToken) {
+  if (currentToken && !headers["Authorization"]) {
     headers["Authorization"] = `Bearer ${currentToken}`;
   }
 
@@ -62,4 +62,10 @@ export const api = {
   getTrash: (type) => apiFetch(`/trash/${type}`),
   restoreTrash: (type, id) => apiFetch(`/trash/restore/${type}/${id}`, { method: "POST" }),
   permanentDelete: (type, id) => apiFetch(`/trash/permanent/${type}/${id}`, { method: "DELETE" }),
+  
+  // Admin
+  adminLogin: (data) => apiFetch("/admin/login", { method: "POST", body: JSON.stringify(data) }),
+  adminGetUsers: (adminToken) => apiFetch("/admin/users", { headers: { "Authorization": `Bearer ${adminToken}` } }),
+  adminCreateUser: (data, adminToken) => apiFetch("/admin/users", { method: "POST", body: JSON.stringify(data), headers: { "Authorization": `Bearer ${adminToken}` } }),
+  adminDeleteUser: (id, adminToken) => apiFetch(`/admin/users/${id}`, { method: "DELETE", headers: { "Authorization": `Bearer ${adminToken}` } })
 };

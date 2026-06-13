@@ -15,6 +15,7 @@ connectDB();
 
 // ✅ Routes
 app.use('/api/auth', require('./routes/auth'));
+app.use('/api/admin', require('./routes/admin'));
 const { protect } = require('./middleware/authMiddleware');
 
 app.use('/api/parties', protect, require('./routes/parties'));
