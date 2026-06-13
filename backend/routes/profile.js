@@ -1,33 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const Profile = require('../models/Profile');
+const profileController = require('../controllers/profileController');
 
-router.get('/', async (req, res) => {
-  try {
-    let profile = await Profile.findOne();
-    if (!profile) {
-      profile = new Profile();
-      await profile.save();
-    }
-    res.json(profile);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-router.put('/', async (req, res) => {
-  try {
-    let profile = await Profile.findOne();
-    if (!profile) {
-      profile = new Profile(req.body);
-    } else {
-      Object.assign(profile, req.body);
-    }
-    await profile.save();
-    res.json(profile);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+router.get('/', profileController.getProfile);
+router.put('/', profileController.updateProfile);
 
 module.exports = router;

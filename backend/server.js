@@ -1,8 +1,8 @@
 require('dotenv').config();
 
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
+const connectDB = require('./config/db');
 
 const app = express();
 
@@ -11,17 +11,6 @@ app.use(cors());
 app.use(express.json());
 
 // ✅ MongoDB Connection
-const connectDB = async () => {
-  try {
-    await mongoose.connect(process.env.MONGO_URI);
-    console.log('✅ MongoDB Connected');
-  } catch (err) {
-    console.error('❌ MongoDB Error:', err.message);
-    process.exit(1); // stop app if DB fails
-  }
-};
-
-// Call DB connection once
 connectDB();
 
 // ✅ Routes

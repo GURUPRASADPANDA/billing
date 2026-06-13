@@ -1,121 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const Bill = require('../models/Bill');
-const Counter = require('../models/Counter');
+const billController = require('../controllers/billController');
 
-router.get('/', async (req, res) => {
-  try {
-    const { startDate, endDate, partyId } = req.query;
-    let query = { deletedAt: null };
-    if (startDate || endDate) {
-      query.billDate = {};
-      if (startDate) query.billDate.$gte = new Date(startDate);
-      if (endDate) {
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
-        query.billDate.$lte = end;
-      }
-    }
-    if (partyId) query['party.id'] = partyId;
-    const bills = await Bill.find(query).sort({ billNumber: -1 });
-    res.json(bills);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-router.get('/next-number', async (req, res) => {
-  try {
-    const counter = await Counter.findById('billNumber');
-    let nextNumber = 1;
-    if (counter) {
-      if (counter.reusable && counter.reusable.length > 0) {
-        nextNumber = Math.min(...counter.reusable);
-      } else {
-        nextNumber = counter.seq + 1;
-      }
-    }
-    res.json({ nextNumber });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-router.get('/summary', async (req, res) => {
-  try {
-    const now = new Date();
-    
-    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const currentMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
-    
-    const previousMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const previousMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
-    
-    const currentMonthBills = await Bill.find({
-      deletedAt: null,
-      billDate: { $gte: currentMonthStart, $lte: currentMonthEnd }
-    });
-    
-    const previousMonthBills = await Bill.find({
-      deletedAt: null,
-      billDate: { $gte: previousMonthStart, $lte: previousMonthEnd }
-    });
-    
-    const currentMonthTotal = currentMonthBills.reduce((sum, bill) => sum + (bill.grandTotal || 0), 0);
-    const previousMonthTotal = previousMonthBills.reduce((sum, bill) => sum + (bill.grandTotal || 0), 0);
-    
-    res.json({
-      currentMonthTotal,
-      previousMonthTotal
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-router.get('/:id', async (req, res) => {
-  try {
-    const bill = await Bill.findById(req.params.id);
-    if (!bill) return res.status(404).json({ error: 'Bill not found' });
-    res.json(bill);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-router.post('/', async (req, res) => {
-  try {
-    const { billDate, party, items, subtotal, gstPercent, gstAmount, grandTotal, notes } = req.body;
-    if (!party || !items || items.length === 0) {
-      return res.status(400).json({ error: 'Party and items are required' });
-    }
-    const billNumber = await Counter.getNextSequence('billNumber');
-    const bill = new Bill({
-      billNumber,
-      billDate: billDate || new Date(),
-      party,
-      items,
-      subtotal,
-      gstPercent: gstPercent || 0,
-      gstAmount: gstAmount || 0,
-      grandTotal,
-      notes,
-    });
-    await bill.save();
-    res.status(201).json(bill);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-router.delete('/:id', async (req, res) => {
-  try {
-    const bill = await Bill.findByIdAndUpdate(req.params.id, { deletedAt: new Date() }, { new: true });
-    if (!bill) return res.status(404).json({ error: 'Bill not found' });
-    res.json({ message: 'Bill moved to trash successfully' });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+router.get('/', billController.getBills);
+router.get('/next-number', billController.getNextNumber);
+router.get('/summary', billController.getSummary);
+router.get('/:id', billController.getBillById);
+router.post('/', billController.createBill);
+router.delete('/:id', billController.deleteBill);
 
 module.exports = router;
