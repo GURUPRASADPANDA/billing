@@ -78,7 +78,7 @@ exports.getUserData = async (req, res) => {
     const recentBills = await Bill.find({ userId })
       .sort({ createdAt: -1 })
       .limit(5)
-      .select('billNumber partyName date totalAmount status');
+      .select('billNumber party billDate grandTotal');
 
     res.json({
       user,

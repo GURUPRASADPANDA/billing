@@ -259,9 +259,9 @@ export function AdminDashboard({ toast, adminToken, logout }) {
                         {userData.recentBills.map(bill => (
                           <tr key={bill._id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                             <td style={{ padding: '12px 0' }}>{bill.billNumber}</td>
-                            <td style={{ padding: '12px 0' }}>{new Date(bill.date).toLocaleDateString()}</td>
-                            <td style={{ padding: '12px 0' }}>{bill.partyName}</td>
-                            <td style={{ padding: '12px 0', textAlign: 'right', fontWeight: 600 }}>₹{bill.totalAmount.toFixed(2)}</td>
+                            <td style={{ padding: '12px 0' }}>{new Date(bill.billDate).toLocaleDateString()}</td>
+                            <td style={{ padding: '12px 0' }}>{bill.party?.companyName || 'Unknown'}</td>
+                            <td style={{ padding: '12px 0', textAlign: 'right', fontWeight: 600 }}>₹{(bill.grandTotal || 0).toFixed(2)}</td>
                           </tr>
                         ))}
                       </tbody>
