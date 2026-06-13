@@ -4,7 +4,7 @@ const Counter = require('../models/Counter');
 exports.getBills = async (req, res) => {
   try {
     const { startDate, endDate, partyId } = req.query;
-    let query = { deletedAt: null };
+    let query = { deletedAt: null, userId: req.user._id };
     if (startDate || endDate) {
       query.billDate = {};
       if (startDate) query.billDate.$gte = new Date(startDate);
@@ -24,7 +24,8 @@ exports.getBills = async (req, res) => {
 
 exports.getNextNumber = async (req, res) => {
   try {
-    const counter = await Counter.findById('billNumber');
+    const counterId = `billNumber_${req.user._id}`;
+    const counter = await Counter.findById(counterId);
     let nextNumber = 1;
     if (counter) {
       if (counter.reusable && counter.reusable.length > 0) {
@@ -51,11 +52,13 @@ exports.getSummary = async (req, res) => {
     
     const currentMonthBills = await Bill.find({
       deletedAt: null,
+      userId: req.user._id,
       billDate: { $gte: currentMonthStart, $lte: currentMonthEnd }
     });
     
     const previousMonthBills = await Bill.find({
       deletedAt: null,
+      userId: req.user._id,
       billDate: { $gte: previousMonthStart, $lte: previousMonthEnd }
     });
     
@@ -73,7 +76,7 @@ exports.getSummary = async (req, res) => {
 
 exports.getBillById = async (req, res) => {
   try {
-    const bill = await Bill.findById(req.params.id);
+    const bill = await Bill.findOne({ _id: req.params.id, userId: req.user._id });
     if (!bill) return res.status(404).json({ error: 'Bill not found' });
     res.json(bill);
   } catch (err) {
@@ -87,8 +90,9 @@ exports.createBill = async (req, res) => {
     if (!party || !items || items.length === 0) {
       return res.status(400).json({ error: 'Party and items are required' });
     }
-    const billNumber = await Counter.getNextSequence('billNumber');
+    const billNumber = await Counter.getNextSequence('billNumber', req.user._id);
     const bill = new Bill({
+      userId: req.user._id,
       billNumber,
       billDate: billDate || new Date(),
       party,
@@ -108,7 +112,7 @@ exports.createBill = async (req, res) => {
 
 exports.deleteBill = async (req, res) => {
   try {
-    const bill = await Bill.findByIdAndUpdate(req.params.id, { deletedAt: new Date() }, { new: true });
+    const bill = await Bill.findOneAndUpdate({ _id: req.params.id, userId: req.user._id }, { deletedAt: new Date() }, { new: true });
     if (!bill) return res.status(404).json({ error: 'Bill not found' });
     res.json({ message: 'Bill moved to trash successfully' });
   } catch (err) {

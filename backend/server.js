@@ -14,11 +14,14 @@ app.use(express.json());
 connectDB();
 
 // ✅ Routes
-app.use('/api/parties', require('./routes/parties'));
-app.use('/api/items', require('./routes/items'));
-app.use('/api/bills', require('./routes/bills'));
-app.use('/api/profile', require('./routes/profile'));
-app.use('/api/trash', require('./routes/trash'));
+app.use('/api/auth', require('./routes/auth'));
+const { protect } = require('./middleware/authMiddleware');
+
+app.use('/api/parties', protect, require('./routes/parties'));
+app.use('/api/items', protect, require('./routes/items'));
+app.use('/api/bills', protect, require('./routes/bills'));
+app.use('/api/profile', protect, require('./routes/profile'));
+app.use('/api/trash', protect, require('./routes/trash'));
 
 // ✅ Health Route (for uptime ping)
 app.get('/api/health', (req, res) => {

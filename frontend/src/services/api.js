@@ -2,12 +2,26 @@ const API_BASE = process.env.NODE_ENV === "production"
   ? "https://billing-0b7n.onrender.com/api" 
   : "http://localhost:5000/api";
 
+let currentToken = null;
+
 async function apiFetch(path, options = {}) {
+  const headers = { "Content-Type": "application/json", ...options.headers };
+  if (currentToken) {
+    headers["Authorization"] = `Bearer ${currentToken}`;
+  }
+
   const res = await fetch(API_BASE + path, {
-    headers: { "Content-Type": "application/json" },
     ...options,
+    headers,
   });
+
   if (!res.ok) {
+    if (res.status === 401) {
+      // Optional: trigger global logout event if needed
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("unauthorized"));
+      }
+    }
     const err = await res.json().catch(() => ({ error: "Request failed" }));
     throw new Error(err.error || "Request failed");
   }
@@ -15,6 +29,13 @@ async function apiFetch(path, options = {}) {
 }
 
 export const api = {
+  setToken: (token) => { currentToken = token; },
+
+  login: (data) => apiFetch("/auth/login", { method: "POST", body: JSON.stringify(data) }),
+  register: (data) => apiFetch("/auth/register", { method: "POST", body: JSON.stringify(data) }),
+  getMe: () => apiFetch("/auth/me"),
+  changePassword: (data) => apiFetch("/auth/password", { method: "PUT", body: JSON.stringify(data) }),
+
   getParties: (search = "") => apiFetch(`/parties${search ? `?search=${search}` : ""}`),
   createParty: (data) => apiFetch("/parties", { method: "POST", body: JSON.stringify(data) }),
   updateParty: (id, data) => apiFetch(`/parties/${id}`, { method: "PUT", body: JSON.stringify(data) }),
@@ -32,6 +53,7 @@ export const api = {
   getNextBillNumber: () => apiFetch("/bills/next-number"),
   createBill: (data) => apiFetch("/bills", { method: "POST", body: JSON.stringify(data) }),
   getBill: (id) => apiFetch(`/bills/${id}`),
+  deleteBill: (id) => apiFetch(`/bills/${id}`, { method: "DELETE" }),
   getBillSummary: () => apiFetch("/bills/summary"),
   
   getProfile: () => apiFetch("/profile"),

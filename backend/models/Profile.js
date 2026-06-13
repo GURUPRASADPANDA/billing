@@ -1,10 +1,11 @@
 const mongoose = require('mongoose');
 
 const profileSchema = new mongoose.Schema({
-  companyName: { type: String, default: 'Mohavhir Enterprises' },
-  gstNumber: { type: String, default: '27AAGFM1234C1Z5' },
-  address: { type: String, default: '123, Industrial Area, Phase 2, Mumbai - 400001, Maharashtra' },
-  phone: { type: String, default: '+91 98765 43210' },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  companyName: { type: String, default: 'Company Name' },
+  gstNumber: { type: String, default: '' },
+  address: { type: String, default: '' },
+  phone: { type: String, default: '' },
 });
 
 module.exports = mongoose.model('Profile', profileSchema);

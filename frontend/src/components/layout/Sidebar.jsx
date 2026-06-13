@@ -27,7 +27,7 @@ export function Sidebar({ dark, setDark, company, showInstall, onInstall, update
         <div style={{ width: 36, height: 36, borderRadius: 8, background: dark ? "#fff" : "#111", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 10 }}>
           <img src="/favicon.png" alt="logo" style={{ width: 22, height: 22, objectFit: "contain" }} />
         </div>
-        <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>{company?.companyName || "Mohavhir"}</div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>{company?.companyName || "Mahavir"}</div>
         <div style={{ fontSize: 11, color: "var(--text-muted)" }}>Enterprises</div>
       </div>
 

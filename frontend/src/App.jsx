@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from "react";
-import { Routes, Route } from "react-router-dom";
-import { Download, RefreshCw, Sun, Moon } from "lucide-react";
+import React, { useState, useEffect, useContext } from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
+import { Download, RefreshCw, Sun, Moon, LogOut } from "lucide-react";
 import { SkeletonTheme } from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 
 import { api } from "./services/api";
 import { ThemeContext } from "./context/ThemeContext";
+import { AuthProvider, AuthContext } from "./context/AuthContext";
 import { useWindowSize } from "./hooks/useWindowSize";
 import { useToast } from "./hooks/useToast";
 
@@ -19,6 +20,8 @@ import { PartiesPage } from "./pages/PartiesPage";
 import { ItemsPage } from "./pages/ItemsPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { TrashPage } from "./pages/TrashPage";
+import { AuthPage } from "./pages/AuthPage";
+import { OnboardingPage } from "./pages/OnboardingPage";
 
 import { BillingSkeleton } from "./components/skeletons/BillingSkeleton";
 import { HistorySkeleton } from "./components/skeletons/HistorySkeleton";
@@ -28,10 +31,12 @@ import { ProfileSkeleton } from "./components/skeletons/ProfileSkeleton";
 import { TableSkeleton } from "./components/skeletons/TableSkeleton";
 import { DashboardSkeleton } from "./components/skeletons/DashboardSkeleton";
 
-export default function App() {
+function AppContent() {
   const [dark, setDark] = useState(false);
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [swRegistration, setSwRegistration] = useState(null);
+
+  const { isAuthenticated, loading: authLoading, logout, user } = useContext(AuthContext);
 
   useEffect(() => {
     const handleUpdate = (e) => {
@@ -56,7 +61,11 @@ export default function App() {
   };
 
   const { toasts, toast, removeToast } = useToast();
+  
   const [company, setCompany] = useState(null);
+  const [profileLoaded, setProfileLoaded] = useState(false);
+  const [needsOnboarding, setNeedsOnboarding] = useState(false);
+
   const { width } = useWindowSize();
   const isMobile = width < 768;
 
@@ -96,8 +105,32 @@ export default function App() {
   };
 
   useEffect(() => {
-    api.getProfile().then(setCompany).catch(() => {});
-  }, []);
+    if (isAuthenticated) {
+      setProfileLoaded(false);
+      api.getProfile()
+        .then(data => {
+          setCompany(data);
+          setNeedsOnboarding(false);
+        })
+        .catch(() => {
+          setNeedsOnboarding(true);
+        })
+        .finally(() => {
+          setProfileLoaded(true);
+        });
+    } else {
+      setCompany(null);
+      setProfileLoaded(false);
+      setNeedsOnboarding(false);
+    }
+  }, [isAuthenticated]);
+
+  const handleSetCompany = (updated) => {
+    setCompany(updated);
+    if (needsOnboarding) {
+      setNeedsOnboarding(false);
+    }
+  };
 
   const theme = {
     "--bg": dark ? "#0f172a" : "#ffffff",
@@ -106,6 +139,7 @@ export default function App() {
     "--text": dark ? "#f1f5f9" : "#0f172a",
     "--text-muted": dark ? "#94a3b8" : "#64748b",
     "--border": dark ? "#334155" : "#e2e8f0",
+    "--primary": "#3b82f6",
   };
 
   if (showSplash && isMobile) {
@@ -129,6 +163,42 @@ export default function App() {
     );
   }
 
+  if (authLoading) {
+    return <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh", background: "#f1f5f9", ...theme }}>Loading...</div>;
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <ThemeContext.Provider value={{ dark, setDark }}>
+        <div style={theme}>
+          <Routes>
+            <Route path="/auth" element={<AuthPage toast={toast} />} />
+            <Route path="*" element={<Navigate to="/auth" />} />
+          </Routes>
+          <Toast toasts={toasts} remove={removeToast} />
+        </div>
+      </ThemeContext.Provider>
+    );
+  }
+
+  if (!profileLoaded) {
+    return <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh", background: "#f1f5f9", ...theme }}>Loading profile...</div>;
+  }
+
+  if (needsOnboarding) {
+    return (
+      <ThemeContext.Provider value={{ dark, setDark }}>
+        <div style={theme}>
+          <Routes>
+            <Route path="/onboarding" element={<OnboardingPage toast={toast} setCompany={handleSetCompany} />} />
+            <Route path="*" element={<Navigate to="/onboarding" />} />
+          </Routes>
+          <Toast toasts={toasts} remove={removeToast} />
+        </div>
+      </ThemeContext.Provider>
+    );
+  }
+
   return (
     <ThemeContext.Provider value={{ dark, setDark }}>
       <SkeletonTheme baseColor={dark ? "#1e293b" : "#e2e8f0"} highlightColor={dark ? "#334155" : "#f8fafc"}>
@@ -141,7 +211,7 @@ export default function App() {
                 <div style={{ width: 40, height: 40, borderRadius: 10, background: dark ? "#fff" : "#111", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <img src="/favicon.png" alt="logo" style={{ width: 22, height: 22, objectFit: "contain" }} />
                 </div>
-                <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text)" }}>{company?.companyName || "Loading..."}</div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text)" }}>{company?.companyName || "Mahavir"}</div>
               </div>
               <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
                 {showInstall && (
@@ -153,33 +223,24 @@ export default function App() {
                   <RefreshCw size={18} />
                 </button>
                 <button onClick={() => setDark(!dark)} style={{ background: "none", border: "none", fontSize: 20, display: "flex", color: "var(--text)" }}>{dark ? <Sun size={18} /> : <Moon size={18} />}</button>
+                <button onClick={logout} style={{ background: "none", border: "none", fontSize: 20, display: "flex", color: "#ef4444" }}><LogOut size={18} /></button>
               </div>
             </header>
           )}
 
           <main style={{ flex: 1, padding: isMobile ? "20px 16px 80px" : "32px 36px", overflowY: "auto", overflowX: "hidden", minWidth: 0 }}>
             <div style={{ maxWidth: "100%", margin: "0 auto", padding: isMobile < 600 ? "0 10px" : 0 }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+                 {!isMobile && <button onClick={logout} style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--text)", padding: "8px 16px", borderRadius: 8, display: "flex", gap: 8, alignItems: "center", cursor: "pointer" }}><LogOut size={16} /> Logout ({user?.username})</button>}
+              </div>
               <Routes>
-                {!company ? (
-                  <>
-                    <Route path="/" element={<BillingSkeleton isMobile={isMobile} />} />
-                    <Route path="/history" element={<HistorySkeleton isMobile={isMobile} />} />
-                    <Route path="/parties" element={<PartiesSkeleton isMobile={isMobile} />} />
-                    <Route path="/items" element={<ItemsSkeleton isMobile={isMobile} />} />
-                    <Route path="/profile" element={<ProfileSkeleton />} />
-                    <Route path="/trash" element={<TableSkeleton />} />
-                    <Route path="*" element={<DashboardSkeleton isMobile={isMobile} />} />
-                  </>
-                ) : (
-                  <>
-                    <Route path="/" element={<BillingPage toast={toast} company={company} isMobile={isMobile} />} />
-                    <Route path="/history" element={<HistoryPage toast={toast} company={company} isMobile={isMobile} />} />
-                    <Route path="/parties" element={<PartiesPage toast={toast} isMobile={isMobile} />} />
-                    <Route path="/items" element={<ItemsPage toast={toast} isMobile={isMobile} />} />
-                    <Route path="/profile" element={<ProfilePage toast={toast} company={company} setCompany={setCompany} />} />
-                    <Route path="/trash" element={<TrashPage toast={toast} />} />
-                  </>
-                )}
+                <Route path="/" element={<BillingPage toast={toast} company={company} isMobile={isMobile} />} />
+                <Route path="/history" element={<HistoryPage toast={toast} company={company} isMobile={isMobile} />} />
+                <Route path="/parties" element={<PartiesPage toast={toast} isMobile={isMobile} />} />
+                <Route path="/items" element={<ItemsPage toast={toast} isMobile={isMobile} />} />
+                <Route path="/profile" element={<ProfilePage toast={toast} company={company} setCompany={handleSetCompany} user={user} logout={logout} />} />
+                <Route path="/trash" element={<TrashPage toast={toast} />} />
+                <Route path="*" element={<Navigate to="/" />} />
               </Routes>
             </div>
           </main>
@@ -189,5 +250,13 @@ export default function App() {
         </div>
       </SkeletonTheme>
     </ThemeContext.Provider>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
