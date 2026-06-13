@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../services/api';
 import { Btn } from '../../components/ui/Btn';
-import { Users, LogOut, Trash2, UserPlus, Clock } from 'lucide-react';
+import { Users, LogOut, Trash2, UserPlus, Clock, Eye, X } from 'lucide-react';
 
 export function AdminDashboard({ toast, adminToken, logout }) {
   const [users, setUsers] = useState([]);
@@ -9,6 +9,10 @@ export function AdminDashboard({ toast, adminToken, logout }) {
 
   const [showAdd, setShowAdd] = useState(false);
   const [newUser, setNewUser] = useState({ username: '', email: '', password: '' });
+
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [userData, setUserData] = useState(null);
+  const [loadingData, setLoadingData] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -22,6 +26,21 @@ export function AdminDashboard({ toast, adminToken, logout }) {
       toast('Failed to load users: ' + err.message, 'error');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleViewData = async (user) => {
+    setSelectedUser(user);
+    setLoadingData(true);
+    setUserData(null);
+    try {
+      const data = await api.adminGetUserData(user._id, adminToken);
+      setUserData(data);
+    } catch (err) {
+      toast('Failed to load user data: ' + err.message, 'error');
+      setSelectedUser(null);
+    } finally {
+      setLoadingData(false);
     }
   };
 
@@ -52,7 +71,7 @@ export function AdminDashboard({ toast, adminToken, logout }) {
   const activeUsers = users.filter(u => u.lastLogin && (new Date() - new Date(u.lastLogin)) < 1000 * 60 * 60 * 24); // Active in last 24h
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f1f5f9', color: '#0f172a', padding: '40px 20px' }}>
+    <div style={{ minHeight: '100vh', background: '#f1f5f9', color: '#0f172a', padding: '40px 20px', position: 'relative' }}>
       <div style={{ maxWidth: 1000, margin: '0 auto' }}>
         
         {/* Header */}
@@ -145,14 +164,24 @@ export function AdminDashboard({ toast, adminToken, logout }) {
                         )}
                       </td>
                       <td style={{ padding: '16px 24px', textAlign: 'right' }}>
-                        <button 
-                          onClick={() => handleDelete(user._id, user.username)}
-                          style={{ background: 'transparent', border: '1px solid #fecaca', color: '#ef4444', padding: '6px 12px', borderRadius: 6, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 500, transition: 'all 0.2s' }}
-                          onMouseOver={(e) => { e.currentTarget.style.background = '#fee2e2'; }}
-                          onMouseOut={(e) => { e.currentTarget.style.background = 'transparent'; }}
-                        >
-                          <Trash2 size={14} /> Delete
-                        </button>
+                        <div style={{ display: 'inline-flex', gap: 8 }}>
+                          <button 
+                            onClick={() => handleViewData(user)}
+                            style={{ background: 'transparent', border: '1px solid #bae6fd', color: '#0284c7', padding: '6px 12px', borderRadius: 6, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 500, transition: 'all 0.2s' }}
+                            onMouseOver={(e) => { e.currentTarget.style.background = '#e0f2fe'; }}
+                            onMouseOut={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                          >
+                            <Eye size={14} /> View
+                          </button>
+                          <button 
+                            onClick={() => handleDelete(user._id, user.username)}
+                            style={{ background: 'transparent', border: '1px solid #fecaca', color: '#ef4444', padding: '6px 12px', borderRadius: 6, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 500, transition: 'all 0.2s' }}
+                            onMouseOver={(e) => { e.currentTarget.style.background = '#fee2e2'; }}
+                            onMouseOut={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                          >
+                            <Trash2 size={14} /> Delete
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -167,6 +196,87 @@ export function AdminDashboard({ toast, adminToken, logout }) {
           )}
         </div>
       </div>
+
+      {/* User Data Modal */}
+      {selectedUser && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(4px)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <div style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 700, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
+            <div style={{ padding: '24px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: '#fff', zIndex: 10 }}>
+              <div>
+                <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>{selectedUser.username}'s Data</h2>
+                <div style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>ID: {selectedUser._id}</div>
+              </div>
+              <button onClick={() => setSelectedUser(null)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#64748b' }}>
+                <X size={24} />
+              </button>
+            </div>
+            
+            <div style={{ padding: 24 }}>
+              {loadingData ? (
+                <div style={{ padding: 40, textAlign: 'center', color: '#64748b' }}>Fetching detailed records...</div>
+              ) : userData ? (
+                <div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 24 }}>
+                    <div style={{ background: '#f8fafc', padding: 16, borderRadius: 12, border: '1px solid #e2e8f0' }}>
+                      <div style={{ fontSize: 12, color: '#64748b', textTransform: 'uppercase', fontWeight: 600, marginBottom: 4 }}>Total Bills</div>
+                      <div style={{ fontSize: 24, fontWeight: 700, color: '#3b82f6' }}>{userData.stats.bills}</div>
+                    </div>
+                    <div style={{ background: '#f8fafc', padding: 16, borderRadius: 12, border: '1px solid #e2e8f0' }}>
+                      <div style={{ fontSize: 12, color: '#64748b', textTransform: 'uppercase', fontWeight: 600, marginBottom: 4 }}>Total Items</div>
+                      <div style={{ fontSize: 24, fontWeight: 700, color: '#8b5cf6' }}>{userData.stats.items}</div>
+                    </div>
+                    <div style={{ background: '#f8fafc', padding: 16, borderRadius: 12, border: '1px solid #e2e8f0' }}>
+                      <div style={{ fontSize: 12, color: '#64748b', textTransform: 'uppercase', fontWeight: 600, marginBottom: 4 }}>Total Parties</div>
+                      <div style={{ fontSize: 24, fontWeight: 700, color: '#10b981' }}>{userData.stats.parties}</div>
+                    </div>
+                  </div>
+
+                  <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 600, borderBottom: '1px solid #e2e8f0', paddingBottom: 8 }}>Company Profile</h3>
+                  {userData.profile ? (
+                    <div style={{ background: '#f8fafc', padding: 20, borderRadius: 12, border: '1px solid #e2e8f0', marginBottom: 24, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                      <div><strong style={{ display: 'block', fontSize: 12, color: '#64748b' }}>Company Name:</strong> {userData.profile.companyName}</div>
+                      <div><strong style={{ display: 'block', fontSize: 12, color: '#64748b' }}>Phone:</strong> {userData.profile.phone}</div>
+                      <div><strong style={{ display: 'block', fontSize: 12, color: '#64748b' }}>Email:</strong> {userData.profile.email || '-'}</div>
+                      <div><strong style={{ display: 'block', fontSize: 12, color: '#64748b' }}>GST No:</strong> {userData.profile.gstNo || '-'}</div>
+                      <div style={{ gridColumn: '1 / -1' }}><strong style={{ display: 'block', fontSize: 12, color: '#64748b' }}>Address:</strong> {userData.profile.address || '-'}</div>
+                    </div>
+                  ) : (
+                    <div style={{ padding: 16, background: '#fffbeb', color: '#b45309', borderRadius: 12, marginBottom: 24 }}>Company profile not set up yet.</div>
+                  )}
+
+                  <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 600, borderBottom: '1px solid #e2e8f0', paddingBottom: 8 }}>Recent Bills</h3>
+                  {userData.recentBills.length > 0 ? (
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+                      <thead>
+                        <tr style={{ color: '#64748b', borderBottom: '1px solid #e2e8f0' }}>
+                          <th style={{ padding: '8px 0', textAlign: 'left', fontWeight: 600 }}>Bill #</th>
+                          <th style={{ padding: '8px 0', textAlign: 'left', fontWeight: 600 }}>Date</th>
+                          <th style={{ padding: '8px 0', textAlign: 'left', fontWeight: 600 }}>Party</th>
+                          <th style={{ padding: '8px 0', textAlign: 'right', fontWeight: 600 }}>Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {userData.recentBills.map(bill => (
+                          <tr key={bill._id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                            <td style={{ padding: '12px 0' }}>{bill.billNumber}</td>
+                            <td style={{ padding: '12px 0' }}>{new Date(bill.date).toLocaleDateString()}</td>
+                            <td style={{ padding: '12px 0' }}>{bill.partyName}</td>
+                            <td style={{ padding: '12px 0', textAlign: 'right', fontWeight: 600 }}>₹{bill.totalAmount.toFixed(2)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  ) : (
+                    <div style={{ color: '#64748b', fontStyle: 'italic' }}>No bills generated yet.</div>
+                  )}
+                </div>
+              ) : (
+                <div style={{ color: '#ef4444' }}>Failed to load data.</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

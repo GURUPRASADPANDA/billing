@@ -59,3 +59,38 @@ exports.deleteUser = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+exports.getUserData = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    
+    const user = await User.findById(userId).select('-password');
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const profile = await Profile.findOne({ userId });
+    
+    // Get counts
+    const billsCount = await Bill.countDocuments({ userId });
+    const itemsCount = await Item.countDocuments({ userId });
+    const partiesCount = await Party.countDocuments({ userId });
+
+    // Get recent 5 bills
+    const recentBills = await Bill.find({ userId })
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .select('billNumber partyName date totalAmount status');
+
+    res.json({
+      user,
+      profile,
+      stats: {
+        bills: billsCount,
+        items: itemsCount,
+        parties: partiesCount
+      },
+      recentBills
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
