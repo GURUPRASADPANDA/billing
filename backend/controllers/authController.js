@@ -46,8 +46,11 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { username, password } = req.body;
-
     const user = await User.findOne({ username });
+
+    if (user && user.deletedAt) {
+      return res.status(403).json({ error: 'Your account has been suspended or deleted. Contact admin.' });
+    }
 
     if (user && (await user.comparePassword(password))) {
       user.lastLogin = new Date();

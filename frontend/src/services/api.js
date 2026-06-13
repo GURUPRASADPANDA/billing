@@ -66,7 +66,10 @@ export const api = {
   // Admin
   adminLogin: (data) => apiFetch("/admin/login", { method: "POST", body: JSON.stringify(data) }),
   adminGetUsers: (adminToken) => apiFetch("/admin/users", { headers: { "Authorization": `Bearer ${adminToken}` } }),
+  adminGetTrashedUsers: (adminToken) => apiFetch("/admin/users/trash", { headers: { "Authorization": `Bearer ${adminToken}` } }),
   adminCreateUser: (data, adminToken) => apiFetch("/admin/users", { method: "POST", body: JSON.stringify(data), headers: { "Authorization": `Bearer ${adminToken}` } }),
   adminDeleteUser: (id, adminToken) => apiFetch(`/admin/users/${id}`, { method: "DELETE", headers: { "Authorization": `Bearer ${adminToken}` } }),
+  adminRestoreUser: (id, adminToken) => apiFetch(`/admin/users/${id}/restore`, { method: "POST", headers: { "Authorization": `Bearer ${adminToken}` } }),
+  adminPermanentDeleteUser: (id, adminToken) => apiFetch(`/admin/users/${id}/permanent`, { method: "DELETE", headers: { "Authorization": `Bearer ${adminToken}` } }),
   adminGetUserData: (id, adminToken) => apiFetch(`/admin/users/${id}/data`, { headers: { "Authorization": `Bearer ${adminToken}` } })
 };

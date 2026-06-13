@@ -27,9 +27,7 @@ exports.adminLogin = (req, res) => {
 
 exports.getUsers = async (req, res) => {
   try {
-    const users = await User.find({}).select('-password');
-    // For each user, we can optionally fetch counts, but to keep it simple and performant,
-    // we'll just return the user objects which now contain lastLogin.
+    const users = await User.find({ deletedAt: null }).select('-password');
     res.json(users);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -40,21 +38,16 @@ exports.deleteUser = async (req, res) => {
   try {
     const userId = req.params.id;
     
-    // Delete user
+    // Soft Delete user
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
-    await User.findByIdAndDelete(userId);
+    
+    user.deletedAt = new Date();
+    await user.save();
 
-    // Delete isolated data
-    await Bill.deleteMany({ userId });
-    await Item.deleteMany({ userId });
-    await Party.deleteMany({ userId });
-    await Profile.deleteMany({ userId });
-    await Counter.deleteMany({ userId });
-
-    res.json({ message: 'User and all associated data deleted' });
+    res.json({ message: 'User moved to trash successfully' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -90,6 +83,52 @@ exports.getUserData = async (req, res) => {
       },
       recentBills
     });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.getTrashedUsers = async (req, res) => {
+  try {
+    const users = await User.find({ deletedAt: { $ne: null } }).select('-password');
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.restoreUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    
+    user.deletedAt = null;
+    await user.save();
+    
+    res.json({ message: 'User restored successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.permanentDeleteUser = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    
+    // Delete user
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    
+    await User.findByIdAndDelete(userId);
+
+    // Delete all isolated data
+    await Bill.deleteMany({ userId });
+    await Item.deleteMany({ userId });
+    await Party.deleteMany({ userId });
+    await Profile.deleteMany({ userId });
+    await Counter.deleteMany({ userId });
+
+    res.json({ message: 'User permanently deleted' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../services/api';
 import { Btn } from '../../components/ui/Btn';
-import { Users, LogOut, Trash2, UserPlus, Clock, Eye, X } from 'lucide-react';
+import { Users, LogOut, Trash2, UserPlus, Clock, Eye, X, RefreshCcw, ArchiveX } from 'lucide-react';
 
 export function AdminDashboard({ toast, adminToken, logout }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [view, setView] = useState('active'); // 'active' | 'trash'
 
   const [showAdd, setShowAdd] = useState(false);
   const [newUser, setNewUser] = useState({ username: '', email: '', password: '' });
@@ -42,11 +43,14 @@ export function AdminDashboard({ toast, adminToken, logout }) {
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [view]);
 
   const fetchUsers = async () => {
+    setLoading(true);
     try {
-      const data = await api.adminGetUsers(adminToken);
+      const data = view === 'active' 
+        ? await api.adminGetUsers(adminToken)
+        : await api.adminGetTrashedUsers(adminToken);
       setUsers(data);
     } catch (err) {
       toast('Failed to load users: ' + err.message, 'error');
@@ -71,13 +75,34 @@ export function AdminDashboard({ toast, adminToken, logout }) {
   };
 
   const handleDelete = async (id, username) => {
-    if (!window.confirm(`Are you absolutely sure you want to delete ${username} and ALL their data?`)) return;
+    if (!window.confirm(`Are you sure you want to move ${username} to Trash? They won't be able to log in.`)) return;
     try {
       await api.adminDeleteUser(id, adminToken);
-      toast('User deleted successfully', 'success');
+      toast('User moved to trash', 'success');
       fetchUsers();
     } catch (err) {
       toast('Failed to delete user: ' + err.message, 'error');
+    }
+  };
+
+  const handleRestore = async (id, username) => {
+    try {
+      await api.adminRestoreUser(id, adminToken);
+      toast(`${username} restored successfully`, 'success');
+      fetchUsers();
+    } catch (err) {
+      toast('Failed to restore user: ' + err.message, 'error');
+    }
+  };
+
+  const handlePermanentDelete = async (id, username) => {
+    if (!window.confirm(`WARNING: Are you absolutely sure you want to PERMANENTLY delete ${username} and ALL their data? This cannot be undone.`)) return;
+    try {
+      await api.adminPermanentDeleteUser(id, adminToken);
+      toast('User permanently deleted', 'success');
+      fetchUsers();
+    } catch (err) {
+      toast('Failed to permanently delete user: ' + err.message, 'error');
     }
   };
 
@@ -128,11 +153,26 @@ export function AdminDashboard({ toast, adminToken, logout }) {
 
         {/* Main Content */}
         <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
-          <div style={{ padding: '20px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h2 style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>Registered Users</h2>
-            <Btn onClick={() => setShowAdd(!showAdd)} style={{ background: '#3b82f6', color: '#fff', border: 'none' }}>
-              <UserPlus size={16} style={{ marginRight: 8 }} /> Add User
-            </Btn>
+          <div style={{ padding: '20px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
+            <div style={{ display: 'flex', gap: 16, borderBottom: '2px solid transparent' }}>
+              <button 
+                onClick={() => setView('active')} 
+                style={{ background: 'none', border: 'none', padding: '0 0 8px', fontSize: 16, fontWeight: 600, color: view === 'active' ? '#3b82f6' : '#64748b', borderBottom: view === 'active' ? '2px solid #3b82f6' : '2px solid transparent', cursor: 'pointer' }}
+              >
+                Active Users
+              </button>
+              <button 
+                onClick={() => setView('trash')} 
+                style={{ background: 'none', border: 'none', padding: '0 0 8px', fontSize: 16, fontWeight: 600, color: view === 'trash' ? '#ef4444' : '#64748b', borderBottom: view === 'trash' ? '2px solid #ef4444' : '2px solid transparent', cursor: 'pointer' }}
+              >
+                Recycle Bin
+              </button>
+            </div>
+            {view === 'active' && (
+              <Btn onClick={() => setShowAdd(!showAdd)} style={{ background: '#3b82f6', color: '#fff', border: 'none' }}>
+                <UserPlus size={16} style={{ marginRight: 8 }} /> Add User
+              </Btn>
+            )}
           </div>
 
           {showAdd && (
@@ -194,19 +234,32 @@ export function AdminDashboard({ toast, adminToken, logout }) {
                           <button 
                             onClick={() => handleViewData(user)}
                             style={{ background: 'transparent', border: '1px solid #bae6fd', color: '#0284c7', padding: '6px 12px', borderRadius: 6, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 500, transition: 'all 0.2s' }}
-                            onMouseOver={(e) => { e.currentTarget.style.background = '#e0f2fe'; }}
-                            onMouseOut={(e) => { e.currentTarget.style.background = 'transparent'; }}
                           >
                             <Eye size={14} /> View
                           </button>
-                          <button 
-                            onClick={() => handleDelete(user._id, user.username)}
-                            style={{ background: 'transparent', border: '1px solid #fecaca', color: '#ef4444', padding: '6px 12px', borderRadius: 6, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 500, transition: 'all 0.2s' }}
-                            onMouseOver={(e) => { e.currentTarget.style.background = '#fee2e2'; }}
-                            onMouseOut={(e) => { e.currentTarget.style.background = 'transparent'; }}
-                          >
-                            <Trash2 size={14} /> Delete
-                          </button>
+                          {view === 'active' ? (
+                            <button 
+                              onClick={() => handleDelete(user._id, user.username)}
+                              style={{ background: 'transparent', border: '1px solid #fca5a5', color: '#ef4444', padding: '6px 12px', borderRadius: 6, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 500, transition: 'all 0.2s' }}
+                            >
+                              <Trash2 size={14} /> Trash
+                            </button>
+                          ) : (
+                            <>
+                              <button 
+                                onClick={() => handleRestore(user._id, user.username)}
+                                style={{ background: 'transparent', border: '1px solid #86efac', color: '#10b981', padding: '6px 12px', borderRadius: 6, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 500, transition: 'all 0.2s' }}
+                              >
+                                <RefreshCcw size={14} /> Restore
+                              </button>
+                              <button 
+                                onClick={() => handlePermanentDelete(user._id, user.username)}
+                                style={{ background: '#ef4444', border: 'none', color: '#fff', padding: '6px 12px', borderRadius: 6, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 500, transition: 'all 0.2s' }}
+                              >
+                                <ArchiveX size={14} /> Delete
+                              </button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>
