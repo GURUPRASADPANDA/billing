@@ -14,6 +14,32 @@ export function AdminDashboard({ toast, adminToken, logout }) {
   const [userData, setUserData] = useState(null);
   const [loadingData, setLoadingData] = useState(false);
 
+  // Extra Layer Security: Auto logout after 5 minutes of inactivity
+  useEffect(() => {
+    let timeoutId;
+    const handleLogout = () => {
+      window.alert("Security Alert: Your Admin session has expired after 5 minutes of inactivity. You will now be logged out.");
+      logout();
+    };
+
+    const resetTimer = () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      timeoutId = setTimeout(handleLogout, 5 * 60 * 1000); // 5 minutes
+    };
+
+    // Initialize timer
+    resetTimer();
+
+    // Reset timer on any user activity
+    const events = ['mousemove', 'keydown', 'click', 'scroll'];
+    events.forEach(event => window.addEventListener(event, resetTimer));
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      events.forEach(event => window.removeEventListener(event, resetTimer));
+    };
+  }, [logout]);
+
   useEffect(() => {
     fetchUsers();
   }, []);

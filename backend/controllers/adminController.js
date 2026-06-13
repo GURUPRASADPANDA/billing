@@ -12,7 +12,7 @@ const ADMIN_PASS = '02041977';
 
 const generateAdminToken = () => {
   return jwt.sign({ role: 'admin' }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN || '7d',
+    expiresIn: '5m', // Extra security: Enforce 5 minute absolute expiration on the backend
   });
 };
 
