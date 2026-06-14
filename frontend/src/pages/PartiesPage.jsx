@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useContext } from 'react';
 import { Users, Pencil, Trash2, Phone, MapPin } from "lucide-react";
 import { api } from "../services/api";
 import { Input } from "../components/ui/Input";
@@ -6,22 +6,16 @@ import { Btn } from "../components/ui/Btn";
 import { Modal } from "../components/ui/Modal";
 import { PartiesSkeleton } from "../components/skeletons/PartiesSkeleton";
 
+import { DataContext } from "../context/DataContext";
+
 export function PartiesPage({ toast, isMobile }) {
-  const [parties, setParties] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { parties, loadingParties: loading, refreshParties } = useContext(DataContext);
   const [search, setSearch] = useState("");
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({ companyName: "", gstNumber: "", address: "", phone: "" });
   const [saving, setSaving] = useState(false);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try { setParties(await api.getParties(search)); }
-    catch (e) { toast(e.message, "error"); }
-    finally { setLoading(false); }
-  }, [search, toast]);
 
-  useEffect(() => { load(); }, [load]);
 
   const openAdd = () => { setForm({ companyName: "", gstNumber: "", address: "", phone: "" }); setModal("add"); };
   const openEdit = (p) => { setForm({ companyName: p.companyName, gstNumber: p.gstNumber || "", address: p.address || "", phone: p.phone || "" }); setModal(p._id); };
@@ -32,14 +26,14 @@ export function PartiesPage({ toast, isMobile }) {
     try {
       if (modal === "add") { await api.createParty(form); toast("Party added!", "success"); }
       else { await api.updateParty(modal, form); toast("Party updated!", "success"); }
-      setModal(null); load();
+      setModal(null); refreshParties();
     } catch (e) { toast(e.message, "error"); }
     finally { setSaving(false); }
   };
 
   const del = async (id) => {
     if (!confirm("Delete this party?")) return;
-    try { await api.deleteParty(id); toast("Party deleted", "success"); load(); }
+    try { await api.deleteParty(id); toast("Party deleted", "success"); refreshParties(); }
     catch (e) { toast(e.message, "error"); }
   };
 
@@ -58,7 +52,7 @@ export function PartiesPage({ toast, isMobile }) {
       {loading ? <PartiesSkeleton isMobile={isMobile} /> :
         parties.length === 0 ? <div style={{ textAlign: "center", color: "var(--text-muted)", padding: 60 }}>No parties found. Add one!</div> :
         <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr": "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
-          {parties.map(p => (
+          {parties.filter(p => p.companyName.toLowerCase().includes(search.toLowerCase()) || (p.phone && p.phone.includes(search))).map(p => (
             <div key={p._id} style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 12, padding: 20 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
                 <div style={{ width: 40, height: 40, borderRadius: 10, background: "#dbeafe", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 700, color: "#1d4ed8" }}>

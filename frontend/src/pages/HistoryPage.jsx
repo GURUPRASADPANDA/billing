@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useContext } from 'react';
 import { History, Printer, Eye, Trash2 } from "lucide-react";
 import { api } from "../services/api";
 import { Btn } from "../components/ui/Btn";
@@ -7,38 +7,29 @@ import { StatementModal } from "../components/pdf/StatementModal";
 import { HistorySkeleton } from "../components/skeletons/HistorySkeleton";
 import { formatDate, formatCurrency } from "../utils/formatters";
 
+import { DataContext } from "../context/DataContext";
+
 export function HistoryPage({ toast, company, isMobile }) {
-  const [bills, setBills] = useState([]);
-  const [summary, setSummary] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { bills: allBills, summary, loadingBills: loading, refreshBills, refreshSummary } = useContext(DataContext);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [preview, setPreview] = useState(null);
   const [statementModalOpen, setStatementModalOpen] = useState(false);
 
-  const loadSummary = useCallback(async () => {
-    try {
-      setSummary(await api.getBillSummary());
-    } catch (e) { console.error("Failed to load summary", e); }
-  }, []);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params = {};
-      if (startDate) params.startDate = startDate;
-      if (endDate) params.endDate = endDate;
-      setBills(await api.getBills(params));
-    } catch (e) { toast(e.message, "error"); }
-    finally { setLoading(false); }
-  }, [startDate, endDate, toast]);
-
-  useEffect(() => { load(); }, [load]);
-  useEffect(() => { loadSummary(); }, [loadSummary]);
+  const bills = useMemo(() => {
+    let filtered = allBills;
+    if (startDate) {
+      filtered = filtered.filter(b => new Date(b.billDate) >= new Date(startDate));
+    }
+    if (endDate) {
+      filtered = filtered.filter(b => new Date(b.billDate) <= new Date(endDate));
+    }
+    return filtered;
+  }, [allBills, startDate, endDate]);
 
   const del = async (id) => {
     if (!confirm("Delete this bill?")) return;
-    try { await api.deleteBill(id); toast("Bill deleted", "success"); load(); loadSummary(); }
+    try { await api.deleteBill(id); toast("Bill deleted", "success"); refreshBills(); refreshSummary(); }
     catch (e) { toast(e.message, "error"); }
   };
 

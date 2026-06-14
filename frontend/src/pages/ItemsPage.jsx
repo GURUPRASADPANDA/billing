@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useContext } from 'react';
 import { Box, Pencil, Trash2 } from "lucide-react";
 import { api } from "../services/api";
 import { Input } from "../components/ui/Input";
@@ -6,23 +6,16 @@ import { Select } from "../components/ui/Select";
 import { Btn } from "../components/ui/Btn";
 import { Modal } from "../components/ui/Modal";
 import { ItemsSkeleton } from "../components/skeletons/ItemsSkeleton";
+import { DataContext } from "../context/DataContext";
 
 export function ItemsPage({ toast, isMobile }) {
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { items, loadingItems: loading, refreshItems } = useContext(DataContext);
   const [search, setSearch] = useState("");
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({ name: "", defaultPrice: "", unit: "pcs" });
   const [saving, setSaving] = useState(false);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try { setItems(await api.getItems(search)); }
-    catch (e) { toast(e.message, "error"); }
-    finally { setLoading(false); }
-  }, [search, toast]);
 
-  useEffect(() => { load(); }, [load]);
 
   const openAdd = () => { setForm({ name: "", defaultPrice: "", unit: "pcs" }); setModal("add"); };
   const openEdit = (item) => { setForm({ name: item.name, defaultPrice: item.defaultPrice || "", unit: item.unit || "pcs" }); setModal(item._id); };
@@ -34,14 +27,14 @@ export function ItemsPage({ toast, isMobile }) {
       const data = { name: form.name.trim(), defaultPrice: parseFloat(form.defaultPrice) || 0, unit: form.unit };
       if (modal === "add") { await api.createItem(data); toast("Item added!", "success"); }
       else { await api.updateItem(modal, data); toast("Item updated!", "success"); }
-      setModal(null); load();
+      setModal(null); refreshItems();
     } catch (e) { toast(e.message, "error"); }
     finally { setSaving(false); }
   };
 
   const del = async (id) => {
     if (!confirm("Delete this item?")) return;
-    try { await api.deleteItem(id); toast("Item deleted", "success"); load(); }
+    try { await api.deleteItem(id); toast("Item deleted", "success"); refreshItems(); }
     catch (e) { toast(e.message, "error"); }
   };
 
@@ -72,7 +65,7 @@ export function ItemsPage({ toast, isMobile }) {
               </thead>
             )}
             <tbody>
-              {items.map(item => (
+              {items.filter(item => item.name.toLowerCase().includes(search.toLowerCase())).map(item => (
                 isMobile ? (
                   <tr key={item._id}>
                     <td colSpan="4" style={{ padding: 12, borderBottom: "1px solid var(--border)" }}>

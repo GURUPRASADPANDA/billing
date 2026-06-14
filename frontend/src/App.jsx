@@ -7,6 +7,7 @@ import "react-loading-skeleton/dist/skeleton.css";
 import { api } from "./services/api";
 import { ThemeContext } from "./context/ThemeContext";
 import { AuthProvider, AuthContext } from "./context/AuthContext";
+import { DataProvider } from "./context/DataContext";
 import { useWindowSize } from "./hooks/useWindowSize";
 import { useToast } from "./hooks/useToast";
 
@@ -292,7 +293,9 @@ export default function App() {
 
   return (
     <AuthProvider>
-      <AppContent />
+      <DataProvider>
+        <AppContent />
+      </DataProvider>
     </AuthProvider>
   );
 }

@@ -2,6 +2,7 @@ require('dotenv').config();
 
 const express = require('express');
 const cors = require('cors');
+const https = require('https');
 const connectDB = require('./config/db');
 
 const app = express();
@@ -47,6 +48,21 @@ app.use((err, req, res, next) => {
 
 // ✅ IMPORTANT: Render PORT
 const PORT = process.env.PORT || 5000;
+
+// ✅ Keep Server Alive on Render (Self-Ping every 10 minutes)
+const PING_INTERVAL = 10 * 60 * 1000; // 10 minutes
+const SERVER_URL = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
+
+if (process.env.RENDER_EXTERNAL_URL) {
+  setInterval(() => {
+    https.get(`${SERVER_URL}/api/health`, (res) => {
+      console.log(`📡 Self-ping successful: ${res.statusCode} at ${new Date().toLocaleTimeString()}`);
+    }).on('error', (err) => {
+      console.error(`🔥 Self-ping failed:`, err.message);
+    });
+  }, PING_INTERVAL);
+  console.log(`⏱️  Self-ping scheduled every 10 minutes for ${SERVER_URL}`);
+}
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);

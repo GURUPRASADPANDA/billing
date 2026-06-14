@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { api } from "../services/api";
 import { Select } from "../components/ui/Select";
 import { Input } from "../components/ui/Input";
 import { Btn } from "../components/ui/Btn";
 import { BillPreview } from "../components/pdf/BillPreview";
 import { BillingSkeleton } from "../components/skeletons/BillingSkeleton";
+import { DataContext } from "../context/DataContext";
 
 export function BillingPage({ toast, company, isMobile }) {
-  const [parties, setParties] = useState([]);
-  const [allItems, setAllItems] = useState([]);
+  const { parties, items: allItems, loadingParties, loadingItems, refreshBills, refreshSummary } = useContext(DataContext);
   const [selectedParty, setSelectedParty] = useState("");
   const [billDate, setBillDate] = useState(new Date().toISOString().split("T")[0]);
   const [nextBillNum, setNextBillNum] = useState("...");
@@ -20,14 +20,11 @@ export function BillingPage({ toast, company, isMobile }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([
-      api.getParties().catch(() => []),
-      api.getItems().catch(() => []),
-      api.getNextBillNumber().catch(() => ({ nextNumber: "?" }))
-    ]).then(([p, i, b]) => {
-      setParties(p);
-      setAllItems(i);
+    api.getNextBillNumber().then(b => {
       setNextBillNum(b.nextNumber);
+      setLoading(false);
+    }).catch(() => {
+      setNextBillNum("?");
       setLoading(false);
     });
   }, []);
@@ -75,12 +72,14 @@ export function BillingPage({ toast, company, isMobile }) {
       setRows([{ itemName: "", quantity: 1, price: 0, total: 0 }]);
       setSelectedParty(""); setNotes(""); setGstPercent(0);
       api.getNextBillNumber().then(r => setNextBillNum(r.nextNumber)).catch(() => {});
+      refreshBills();
+      refreshSummary();
       toast("Bill generated successfully!", "success");
     } catch (e) { toast(e.message, "error"); }
     finally { setSaving(false); }
   };
 
-  if (loading) return <BillingSkeleton isMobile={isMobile} />;
+  if (loading || loadingParties || loadingItems) return <BillingSkeleton isMobile={isMobile} />;
 
   return (
     <div>
