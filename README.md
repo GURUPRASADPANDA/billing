@@ -198,8 +198,11 @@ const COMPANY = {
 
 Create `backend/.env`:
 ```
-MONGO_URI=mongodb+srv://billing:billing@cluster0.oanpcii.mongodb.net/?appName=Cluster0
-PORT=5000
+MONGO_URI=mongo_url
+PORT=port no
+JWT_EXPIRES_IN=7d
+JWT_SECRET=jwt secret key
+REACT_APP_API_URL=api hosted link of backend/backend port no in local
 ```
 
 ---
